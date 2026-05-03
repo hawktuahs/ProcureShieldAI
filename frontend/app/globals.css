@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gov-blue: #1e3a5f;
+}
+
+body {
+  background-color: #f8fafc;
+  color: #1f2937;
+}
+
+.verdict-pass   { background-color: #22C55E; color: white; }
+.verdict-fail   { background-color: #EF4444; color: white; }
+.verdict-review { background-color: #F59E0B; color: white; }
+.verdict-eligible     { background-color: #22C55E; color: white; }
+.verdict-not_eligible { background-color: #EF4444; color: white; }
+.verdict-needs_review { background-color: #F59E0B; color: white; }
