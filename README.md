@@ -1,4 +1,4 @@
-# TenderEval AI
+# ProcureShield AI
 
 **AI-Based Tender Evaluation and Eligibility Analysis for Government Procurement**
 CRPF / AI for Bharat Hackathon 2024
