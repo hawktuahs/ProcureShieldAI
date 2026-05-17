@@ -1,5 +1,5 @@
 """
-PDF text extraction pipeline.
+PDF text extraction pipeline — page-aware edition.
 
 Strategy (in order):
 1. PyMuPDF digital text  — works for text-layer PDFs, no system deps
@@ -7,6 +7,15 @@ Strategy (in order):
 3. Tesseract OCR via PyMuPDF page rendering  — for scanned/image PDFs
    * PyMuPDF renders pages to PNG in-process; NO poppler/pdf2image needed
    * On Windows, auto-detects the standard Tesseract-OCR install path
+
+All extraction functions now embed page markers:
+    --- PAGE 1 ---
+    ... text from page 1 ...
+    --- PAGE 2 ---
+    ... text from page 2 ...
+
+This lets the LLM report page numbers in its extractions, and lets us
+trace every extracted criterion back to its exact source page.
 """
 
 import io
@@ -14,6 +23,7 @@ import logging
 import os
 import platform
 from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -54,46 +64,54 @@ except ImportError:
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Per-page extraction helpers
 # ---------------------------------------------------------------------------
 
-def _fitz_digital_text(filepath: str) -> str:
-    """Extract embedded text using PyMuPDF (fastest, no deps)."""
+def _fitz_pages(filepath: str) -> list[str]:
+    """Extract embedded text per page using PyMuPDF. Returns list indexed by page (0-based)."""
     if not FITZ_AVAILABLE:
-        return ""
+        return []
     try:
         doc = fitz.open(filepath)
-        pages_text = []
-        for page in doc:
-            pages_text.append(page.get_text())
+        pages = [page.get_text() for page in doc]
         doc.close()
-        return "\n\n".join(pages_text)
+        return pages
     except Exception as e:
         logger.debug(f"fitz digital extraction failed: {e}")
-        return ""
+        return []
 
 
-def _pdfplumber_text(filepath: str) -> str:
-    """Extract embedded text using pdfplumber."""
+def _pdfplumber_pages(filepath: str) -> list[str]:
+    """Extract embedded text per page using pdfplumber."""
     if not PDFPLUMBER_AVAILABLE:
-        return ""
+        return []
     try:
-        text = ""
+        pages = []
         with pdfplumber.open(filepath) as pdf:
             for page in pdf.pages:
-                t = page.extract_text()
-                if t:
-                    text += t + "\n\n"
-        return text
+                text = page.extract_text() or ""
+                tables = page.extract_tables()
+                if tables:
+                    for table in tables:
+                        if not table or not table[0]: continue
+                        lines = []
+                        for i, row in enumerate(table):
+                            cleaned_row = [" ".join(str(cell).split()) if cell else "" for cell in row]
+                            lines.append("| " + " | ".join(cleaned_row) + " |")
+                            if i == 0:
+                                lines.append("|" + "|".join(["---"] * len(cleaned_row)) + "|")
+                        text += "\n\n" + "\n".join(lines) + "\n"
+                pages.append(text)
+        return pages
     except Exception as e:
         logger.debug(f"pdfplumber extraction failed: {e}")
-        return ""
+        return []
 
 
-def _ocr_via_fitz(filepath: str) -> str:
+def _ocr_pages_via_fitz(filepath: str) -> list[str]:
     """
     Render each PDF page to PNG with PyMuPDF, then run Tesseract.
-    Does NOT require poppler or pdf2image — fitz handles rendering.
+    Returns list of page texts (0-indexed).
     """
     if not FITZ_AVAILABLE:
         raise RuntimeError("PyMuPDF (pymupdf) is not installed. Run: pip install pymupdf")
@@ -119,58 +137,98 @@ def _ocr_via_fitz(filepath: str) -> str:
             ocr_pages.append(page_text)
             logger.debug(f"OCR page {page_num + 1}/{len(doc)}: {len(page_text)} chars")
         doc.close()
-        return "\n\n".join(ocr_pages)
+        return ocr_pages
     except RuntimeError:
         raise
     except Exception as e:
         raise RuntimeError(f"OCR processing failed: {e}") from e
 
 
+def _pages_to_text_with_markers(pages: list[str]) -> str:
+    """Combine per-page text into a single string with page markers."""
+    parts = []
+    for i, page_text in enumerate(pages):
+        parts.append(f"\n--- PAGE {i + 1} ---\n")
+        parts.append(page_text.strip())
+    return "\n".join(parts)
+
+
+def _total_text_length(pages: list[str]) -> int:
+    return sum(len(p.strip()) for p in pages)
+
+
+def get_page_count(filepath: str) -> int:
+    """Return total number of pages in a PDF."""
+    if not FITZ_AVAILABLE:
+        return 0
+    try:
+        doc = fitz.open(filepath)
+        count = len(doc)
+        doc.close()
+        return count
+    except Exception:
+        return 0
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-def extract_text_from_pdf(filepath: str) -> tuple[str, str]:
+def extract_text_from_pdf(filepath: str) -> tuple[str, str, int]:
     """
-    Returns (text, method) where method is 'digital' or 'ocr'.
+    Returns (text_with_page_markers, method, page_count).
+    method is 'digital' or 'ocr'.
 
-    Tries digital extraction first (fast). Falls back to Tesseract OCR
-    if extracted text is too short (scanned/image-based PDF).
+    Text includes page markers like:
+        --- PAGE 1 ---
+        ... text ...
+        --- PAGE 2 ---
+        ... text ...
     """
-    # 1. Try PyMuPDF digital (best for mixed PDFs)
-    text = _fitz_digital_text(filepath)
+    # 1. Try pdfplumber first (best for tables)
+    pages = _pdfplumber_pages(filepath)
 
-    # 2. Try pdfplumber if fitz gave little
-    if len(text.strip()) < 100 and PDFPLUMBER_AVAILABLE:
-        text = _pdfplumber_text(filepath)
+    # 2. Try PyMuPDF digital if pdfplumber failed or gave nothing
+    if _total_text_length(pages) < 100:
+        pages = _fitz_pages(filepath)
 
-    if len(text.strip()) >= 100:
-        logger.info(f"Digital extraction: {len(text)} chars from {Path(filepath).name}")
-        return text.strip(), "digital"
+    page_count = len(pages) if pages else get_page_count(filepath)
+
+    if _total_text_length(pages) >= 100:
+        text = _pages_to_text_with_markers(pages)
+        logger.info(f"Digital extraction: {len(text)} chars, {page_count} pages from {Path(filepath).name}")
+        return text.strip(), "digital", page_count
 
     # 3. OCR fallback
     logger.info(f"Switching to OCR for {Path(filepath).name} (digital text < 100 chars)")
     try:
-        ocr_text = _ocr_via_fitz(filepath)
-        if len(ocr_text.strip()) < 50:
+        ocr_pages = _ocr_pages_via_fitz(filepath)
+        page_count = len(ocr_pages)
+        text = _pages_to_text_with_markers(ocr_pages)
+        if _total_text_length(ocr_pages) < 50:
             logger.warning("OCR produced very little text — document may be blank or unreadable")
-        logger.info(f"OCR extraction: {len(ocr_text)} chars from {Path(filepath).name}")
-        return ocr_text.strip(), "ocr"
+        logger.info(f"OCR extraction: {len(text)} chars, {page_count} pages from {Path(filepath).name}")
+        return text.strip(), "ocr", page_count
     except RuntimeError as e:
-        # Tesseract not installed — return a clear install message
         msg = str(e)
         logger.error(f"OCR unavailable: {msg}")
-        return f"[OCR required but unavailable: {msg}]", "ocr"
+        return f"[OCR required but unavailable: {msg}]", "ocr", page_count
 
 
-def extract_text_from_txt(filepath: str) -> tuple[str, str]:
+def extract_text_from_txt(filepath: str) -> tuple[str, str, int]:
     """Read plain text files (used for sample data testing)."""
     with open(filepath, "r", encoding="utf-8") as f:
-        return f.read(), "digital"
+        content = f.read()
+    # Wrap in a single page marker for consistency
+    text = f"\n--- PAGE 1 ---\n{content}"
+    return text, "digital", 1
 
 
-def extract_text(filepath: str) -> tuple[str, str]:
-    """Dispatch based on file extension."""
+def extract_text(filepath: str) -> tuple[str, str, int]:
+    """
+    Dispatch based on file extension.
+    Returns (text_with_page_markers, method, page_count).
+    """
     path = Path(filepath)
     ext = path.suffix.lower()
     if ext in (".pdf",):

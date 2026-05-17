@@ -4,13 +4,15 @@ import {
   FileText, Target, Shield, Phone, MessageSquare,
   ChevronDown, ChevronUp, Loader2, MapPin, Mail,
   Building2, LayoutDashboard, Package, Calendar,
-  IndianRupee, CheckCircle2, Info, RefreshCw, Send, AlertCircle,
+  IndianRupee, CheckCircle2, Info, RefreshCw, Send, AlertCircle, ShieldAlert, Eye,
 } from "lucide-react";
 import { askTender } from "@/lib/api";
 import {
   TenderAnalysisData, TenderOverview, AnalysisDocument,
   ScopeItem, EligibilityItem, ContactItem, ItemEntry, Criterion,
 } from "@/lib/api";
+import { useProvenance } from "./SplitWorkspace";
+import AuditLogViewer from "./AuditLogViewer";
 
 interface Props {
   analysis: TenderAnalysisData | null;
@@ -29,7 +31,8 @@ const TABS = [
   { id: "scope",       label: "Scope of Work",  icon: Target },
   { id: "eligibility", label: "Eligibility",    icon: Shield },
   { id: "contacts",    label: "Contacts",       icon: Phone },
-  { id: "followup",    label: "Follow-up",      icon: MessageSquare },
+  { id: "audit",       label: "Audit Trail",    icon: ShieldAlert },
+  { id: "followup",    label: "Ask AI",         icon: MessageSquare },
 ] as const;
 
 type TabId = typeof TABS[number]["id"];
@@ -48,6 +51,20 @@ function Citation({ text }: { text: string }) {
     <div className="border-l-2 border-slate-300 pl-3 py-0.5 my-1">
       <p className="text-xs text-slate-500 leading-relaxed italic">{text}</p>
     </div>
+  );
+}
+
+function PageBadge({ page, text, tenderId }: { page: number | null | undefined; text?: string | null; tenderId?: number }) {
+  const { openProvenance } = useProvenance();
+  if (!page) return null;
+  return (
+    <button
+      onClick={() => openProvenance(page, text || undefined)}
+      className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded hover:bg-blue-100 hover:border-blue-300 transition-colors cursor-pointer font-medium"
+      title={`View source on page ${page}${text ? ` — "${text.slice(0, 60)}…"` : ''}`}
+    >
+      <Eye className="w-2.5 h-2.5" /> pg.{page}
+    </button>
   );
 }
 
@@ -285,7 +302,7 @@ function OverviewTab({ analysis, onReanalyze }: { analysis: TenderAnalysisData; 
 
 // ── DOCUMENTS TAB ─────────────────────────────────────────────────────────────
 
-function DocumentRow({ doc }: { doc: AnalysisDocument }) {
+function DocumentRow({ doc, tenderId }: { doc: AnalysisDocument; tenderId?: number }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border-b border-slate-100 last:border-0">
@@ -305,11 +322,12 @@ function DocumentRow({ doc }: { doc: AnalysisDocument }) {
           {doc.format_available && (
             <span className="text-[10px] bg-green-50 text-green-600 border border-green-200 px-1.5 py-0.5 rounded">Format</span>
           )}
+          <PageBadge page={doc.source_page} text={doc.source_text} tenderId={tenderId} />
           {open ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
         </div>
       </div>
       {open && (
-        <div className="ml-4 mb-3 pl-3 border-l border-slate-200 flex flex-col gap-2">
+        <div className="ml-4 mb-3 pl-3 border-l-2 border-blue-100 flex flex-col gap-2">
           {doc.summary && <p className="text-xs text-slate-500">{doc.summary}</p>}
           {doc.how_to_submit && (
             <div>
@@ -319,14 +337,20 @@ function DocumentRow({ doc }: { doc: AnalysisDocument }) {
           )}
           {doc.details && <Citation text={doc.details} />}
           {doc.format_notes && <p className="text-xs text-slate-500 italic">{doc.format_notes}</p>}
+          {doc.source_text && (
+            <div className="mt-1 bg-amber-50/70 border border-amber-200/60 rounded-lg px-3 py-2">
+              <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-0.5">AI Source Quote</p>
+              <p className="text-xs text-amber-900/80 italic leading-relaxed">&ldquo;{doc.source_text}&rdquo;</p>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function DocumentsTab({ documents, filename, onReanalyze }: {
-  documents: AnalysisDocument[]; filename?: string; onReanalyze?: () => void;
+function DocumentsTab({ documents, filename, onReanalyze, tenderId }: {
+  documents: AnalysisDocument[]; filename?: string; onReanalyze?: () => void; tenderId?: number;
 }) {
   if (!documents.length) return <EmptyState tab="documents" onReanalyze={onReanalyze} />;
   const mandatory = documents.filter(d => d.is_mandatory).length;
@@ -342,7 +366,7 @@ function DocumentsTab({ documents, filename, onReanalyze }: {
         </p>
       </div>
       <div className="px-4 max-h-[500px] overflow-y-auto">
-        {documents.map((doc, i) => <DocumentRow key={i} doc={doc} />)}
+        {documents.map((doc, i) => <DocumentRow key={i} doc={doc} tenderId={tenderId} />)}
       </div>
       {filename && (
         <div className="px-5 py-2.5 border-t border-slate-100">
@@ -353,9 +377,10 @@ function DocumentsTab({ documents, filename, onReanalyze }: {
   );
 }
 
+
 // ── ITEMS TAB ─────────────────────────────────────────────────────────────────
 
-function ItemCard({ item }: { item: ItemEntry }) {
+function ItemCard({ item, tenderId }: { item: ItemEntry; tenderId?: number }) {
   const [expanded, setExpanded] = useState(false);
   const specs = item.specifications ?? [];
   const hasSpecs = specs.length > 0;
@@ -363,39 +388,41 @@ function ItemCard({ item }: { item: ItemEntry }) {
   return (
     <div className="border border-slate-200 rounded-xl bg-white overflow-hidden hover:shadow-sm transition-shadow">
       <div
-        className={`flex items-start gap-4 px-5 py-4 ${hasSpecs ? "cursor-pointer" : ""}`}
+        className={`flex items-start gap-4 px-5 py-4 ${hasSpecs ? "cursor-pointer hover:bg-slate-50/50" : ""}`}
         onClick={() => hasSpecs && setExpanded(!expanded)}
       >
+        {/* Quantity — prominent left column */}
+        <div className="flex flex-col items-center justify-center bg-[#1e3a5f]/5 border border-[#1e3a5f]/15 rounded-lg px-3 py-2 shrink-0 min-w-[64px] text-center">
+          <span className="text-xl font-bold text-[#1e3a5f] tabular-nums leading-none">{item.quantity || "—"}</span>
+          <span className="text-[10px] text-slate-500 mt-0.5">{item.quantity_unit || "units"}</span>
+        </div>
+
+        {/* Main info */}
         <div className="flex-1 min-w-0">
           <p className="text-sm text-slate-800 font-semibold leading-snug">{item.item_name}</p>
-          <div className="flex flex-wrap items-center gap-3 mt-1.5">
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
             {item.specifications_ref && (
               <span className="text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-medium">
                 {item.specifications_ref}
               </span>
             )}
-            {item.consignee && (
-              <span className="text-xs text-slate-500">{item.consignee}</span>
+            {item.delivery_period && (
+              <span className="text-[10px] text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">
+                ⏱ {item.delivery_period}
+              </span>
             )}
-            {item.delivery_location && (
-              <span className="text-xs text-slate-400">{item.delivery_location}</span>
+            {(item.consignee || item.delivery_location) && (
+              <span className="text-[10px] text-slate-500">
+                📍 {item.consignee || item.delivery_location}
+              </span>
             )}
+            <PageBadge page={item.source_page} text={item.source_text} tenderId={tenderId} />
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className="text-lg font-bold text-slate-800 tabular-nums">
-            {item.quantity}
-            {item.quantity_unit && <span className="text-xs font-normal text-slate-400 ml-1">{item.quantity_unit}</span>}
-          </span>
-          {item.delivery_period && (
-            <span className="text-[10px] text-slate-400">{item.delivery_period}</span>
-          )}
-        </div>
+
         {hasSpecs && (
           <div className="shrink-0 self-center">
-            {expanded
-              ? <ChevronUp className="w-4 h-4 text-slate-400" />
-              : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
           </div>
         )}
       </div>
@@ -410,21 +437,36 @@ function ItemCard({ item }: { item: ItemEntry }) {
               </div>
             ))}
           </div>
+          {item.source_text && (
+            <div className="mt-3 border-l-2 border-blue-200 pl-3 py-0.5">
+              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Source</p>
+              <p className="text-xs text-slate-500 italic">&ldquo;{item.source_text}&rdquo;</p>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function ItemsTab({ items, filename, onReanalyze }: {
-  items: ItemEntry[]; filename?: string; onReanalyze?: () => void;
+function ItemsTab({ items, filename, onReanalyze, tenderId }: {
+  items: ItemEntry[]; filename?: string; onReanalyze?: () => void; tenderId?: number;
 }) {
   if (!items.length) return <EmptyState tab="items" onReanalyze={onReanalyze} />;
-  const totalQty = items.reduce((acc, it) => {
+
+  // Deduplicate by item_name (case-insensitive)
+  const seen = new Set<string>();
+  const uniqueItems = items.filter(it => {
+    const key = it.item_name.toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const totalQty = uniqueItems.reduce((acc, it) => {
     const n = parseInt((it.quantity || "0").replace(/,/g, ""), 10);
     return acc + (isNaN(n) ? 0 : n);
   }, 0);
-  const specsCount = items.filter(it => (it.specifications ?? []).length > 0).length;
 
   return (
     <div className="flex flex-col gap-3">
@@ -433,28 +475,28 @@ function ItemsTab({ items, filename, onReanalyze }: {
           <Package className="w-4 h-4 text-blue-600" />
           <h3 className="text-sm font-semibold text-slate-700">Items & Quantities</h3>
           <span className="text-xs text-slate-400">
-            {items.length} item{items.length !== 1 ? "s" : ""}
+            {uniqueItems.length} item{uniqueItems.length !== 1 ? "s" : ""}
             {totalQty > 0 && <> · Total qty: <strong className="text-slate-600">{totalQty.toLocaleString("en-IN")}</strong></>}
-            {specsCount > 0 && <> · {specsCount} with specs</>}
           </span>
         </div>
         {filename && <SourceChip filename={filename} />}
       </div>
-      {items.map((item, i) => (
-        <ItemCard key={i} item={item} />
+      {uniqueItems.map((item, i) => (
+        <ItemCard key={i} item={item} tenderId={tenderId} />
       ))}
     </div>
   );
 }
 
+
 // ── ELIGIBILITY TAB (with criteria fallback) ──────────────────────────────────
 
-function EligibilityCard({ item, filename }: { item: EligibilityItem; filename?: string }) {
+function EligibilityCard({ item, filename, tenderId }: { item: EligibilityItem; filename?: string; tenderId?: number }) {
   return (
     <div className="border border-slate-200 rounded-xl bg-white px-4 py-3.5">
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <p className="text-sm font-semibold text-slate-800">{item.title}</p>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
           {item.threshold_value && (
             <span className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full font-medium">
               {item.threshold_value}
@@ -465,6 +507,7 @@ function EligibilityCard({ item, filename }: { item: EligibilityItem; filename?:
           }`}>
             {item.is_mandatory ? "Mandatory" : "Optional"}
           </span>
+          <PageBadge page={item.source_page} text={item.source_text} tenderId={tenderId} />
         </div>
       </div>
       <p className="text-xs text-slate-500 mb-2">{item.summary}</p>
@@ -496,6 +539,7 @@ function CriterionFallbackCard({ c }: { c: Criterion }) {
           <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium capitalize ${colorClass}`}>
             {c.criterion_type}
           </span>
+          <PageBadge page={c.source_page} text={c.raw_source_text} />
         </div>
       </div>
       {c.raw_source_text && <Citation text={c.raw_source_text} />}
@@ -505,11 +549,12 @@ function CriterionFallbackCard({ c }: { c: Criterion }) {
 
 const TYPE_ORDER = ["financial", "technical", "compliance", "documentation"] as const;
 
-function EligibilityTabContent({ analysisItems, criteria, filename, onReanalyze }: {
+function EligibilityTabContent({ analysisItems, criteria, filename, onReanalyze, tenderId }: {
   analysisItems: EligibilityItem[];
   criteria: Criterion[];
   filename?: string;
   onReanalyze?: () => void;
+  tenderId?: number;
 }) {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"analysis" | "criteria">(
@@ -569,7 +614,7 @@ function EligibilityTabContent({ analysisItems, criteria, filename, onReanalyze 
     return (
       <>
         {analysisItems.map((item, i) => (
-          <EligibilityCard key={i} item={item} filename={filename} />
+          <EligibilityCard key={i} item={item} filename={filename} tenderId={tenderId} />
         ))}
       </>
     );
@@ -627,14 +672,23 @@ function EligibilityTabContent({ analysisItems, criteria, filename, onReanalyze 
 
 // ── SCOPE TAB ─────────────────────────────────────────────────────────────────
 
-function ScopeCard({ item, filename }: { item: ScopeItem; filename?: string }) {
+function ScopeCard({ item, filename, tenderId }: { item: ScopeItem; filename?: string; tenderId?: number; }) {
   return (
     <div className="border border-slate-200 rounded-xl bg-white px-4 py-3.5">
-      <p className="text-sm font-semibold text-slate-800 mb-1">{item.title}</p>
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <p className="text-sm font-semibold text-slate-800">{item.title}</p>
+        <PageBadge page={item.source_page} text={item.source_text} tenderId={tenderId} />
+      </div>
       <p className="text-xs text-slate-500 mb-2">{item.summary}</p>
       <div className="flex flex-col gap-1">
         {(item.citations || []).map((c, i) => <Citation key={i} text={c} />)}
       </div>
+      {item.source_text && (
+        <div className="mt-2 bg-amber-50/70 border border-amber-200/60 rounded-lg px-3 py-2">
+          <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-0.5">AI Source Quote</p>
+          <p className="text-xs text-amber-900/80 italic leading-relaxed">&ldquo;{item.source_text}&rdquo;</p>
+        </div>
+      )}
       <SourceChip filename={filename} />
     </div>
   );
@@ -793,6 +847,7 @@ export default function TenderAnalysisView({
     scope:       analysis?.scope_of_work?.length ?? 0,
     eligibility: Math.max(analysis?.eligibility?.length ?? 0, criteria.length),
     contacts:    analysis?.contacts?.length      ?? 0,
+    audit:       0,
     followup:    0,
   };
 
@@ -867,11 +922,11 @@ export default function TenderAnalysisView({
           )}
 
           {activeTab === "documents" && (
-            <DocumentsTab documents={analysis?.documents ?? []} filename={fname} onReanalyze={onReanalyze} />
+            <DocumentsTab documents={analysis?.documents ?? []} filename={fname} onReanalyze={onReanalyze} tenderId={tenderId} />
           )}
 
           {activeTab === "items" && (
-            <ItemsTab items={analysis?.items ?? []} filename={fname} onReanalyze={onReanalyze} />
+            <ItemsTab items={analysis?.items ?? []} filename={fname} onReanalyze={onReanalyze} tenderId={tenderId} />
           )}
 
           {activeTab === "scope" && (
@@ -882,7 +937,7 @@ export default function TenderAnalysisView({
               {(analysis?.scope_of_work?.length ?? 0) === 0
                 ? <EmptyState tab="scope" onReanalyze={onReanalyze} />
                 : analysis!.scope_of_work.map((item, i) => (
-                    <ScopeCard key={i} item={item} filename={fname} />
+                    <ScopeCard key={i} item={item} filename={fname} tenderId={tenderId} />
                   ))}
             </>
           )}
@@ -897,6 +952,7 @@ export default function TenderAnalysisView({
                 criteria={criteria}
                 filename={fname}
                 onReanalyze={onReanalyze}
+                tenderId={tenderId}
               />
             </>
           )}
@@ -915,6 +971,16 @@ export default function TenderAnalysisView({
           )}
 
           {activeTab === "followup" && <FollowUpTab tenderId={tenderId} />}
+          
+          {activeTab === "audit" && (
+            <>
+              <div className="mb-4">
+                <h3 className="text-xl font-bold text-slate-800">Cryptographic Audit Trail</h3>
+                <p className="text-sm text-slate-500">Immutable ledger of all system events and human overrides.</p>
+              </div>
+              <AuditLogViewer tenderId={tenderId} />
+            </>
+          )}
         </div>
       )}
     </div>

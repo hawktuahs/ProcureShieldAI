@@ -157,22 +157,85 @@ def get_provider() -> LLMProvider:
 # ---------------------------------------------------------------------------
 
 def _extract_json_array(text: str) -> list:
-    match = re.search(r"\[.*\]", text, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            pass
+    """
+    Robustly extract the first complete JSON array from LLM output.
+    Uses bracket counting to handle nested objects — avoids greedy regex failures.
+    """
+    start = text.find('[')
+    if start == -1:
+        return []
+    depth = 0
+    in_string = False
+    escape = False
+    for i, ch in enumerate(text[start:], start):
+        if escape:
+            escape = False
+            continue
+        if ch == '\\' and in_string:
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+        if in_string:
+            continue
+        if ch == '[' or ch == '{':
+            depth += 1
+        elif ch == ']' or ch == '}':
+            depth -= 1
+        if ch == ']' and depth == 0:
+            candidate = text[start:i + 1]
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                # Try cleaning common Llama artifacts: trailing commas, control chars
+                cleaned = re.sub(r',\s*([\]\}])', r'\1', candidate)
+                cleaned = re.sub(r'[\x00-\x1f\x7f]', ' ', cleaned)
+                try:
+                    return json.loads(cleaned)
+                except json.JSONDecodeError:
+                    pass
+            break
     return []
 
 
 def _extract_json_object(text: str) -> dict:
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            pass
+    """
+    Robustly extract the first complete JSON object from LLM output.
+    Uses bracket counting to handle nested objects.
+    """
+    start = text.find('{')
+    if start == -1:
+        return {}
+    depth = 0
+    in_string = False
+    escape = False
+    for i, ch in enumerate(text[start:], start):
+        if escape:
+            escape = False
+            continue
+        if ch == '\\' and in_string:
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+        if in_string:
+            continue
+        if ch == '{' or ch == '[':
+            depth += 1
+        elif ch == '}' or ch == ']':
+            depth -= 1
+        if ch == '}' and depth == 0:
+            candidate = text[start:i + 1]
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                cleaned = re.sub(r',\s*([\]\}])', r'\1', candidate)
+                cleaned = re.sub(r'[\x00-\x1f\x7f]', ' ', cleaned)
+                try:
+                    return json.loads(cleaned)
+                except json.JSONDecodeError:
+                    pass
+            break
     return {}
 
 
@@ -182,9 +245,29 @@ def _truncate(text: str, head: int, tail: int) -> str:
     return text[:head] + "\n...[truncated]...\n" + text[-tail:]
 
 
+def _split_pages(text: str) -> list[tuple[int, str]]:
+    """
+    Split page-marker-delimited text into [(page_num, page_text), ...].
+    Expects markers like '--- PAGE 5 ---' as inserted by pdf_parser.
+    """
+    import re
+    parts = re.split(r"\n---\s*PAGE\s+(\d+)\s*---\n", text)
+    pages: list[tuple[int, str]] = []
+    # parts[0] is text before any marker (usually empty)
+    if parts[0].strip():
+        pages.append((1, parts[0].strip()))
+    # Remaining parts alternate: page_number, page_text
+    for i in range(1, len(parts) - 1, 2):
+        page_num = int(parts[i])
+        page_text = parts[i + 1].strip() if i + 1 < len(parts) else ""
+        if page_text:
+            pages.append((page_num, page_text))
+    return pages
+
+
 def _smart_sample(text: str, budget: int = 20000) -> str:
     """
-    Extract a representative sample from long documents.
+    Extract a representative sample from long documents, preserving page markers.
 
     Government tenders typically have:
       - Cover / NIT at the start (general info, dates, EMD)
@@ -193,34 +276,68 @@ def _smart_sample(text: str, budget: int = 20000) -> str:
       - Checklists, appendices, BoQ near the end
 
     Strategy: 30% front + 25% first-mid + 25% second-mid + 20% end.
-    This ensures all major sections of 50-100+ page tenders are covered.
+    Cuts happen at page boundaries so page markers stay intact.
     """
     n = len(text)
     if n <= budget:
         return text
 
-    head_sz  = int(budget * 0.30)
-    mid1_sz  = int(budget * 0.25)
-    mid2_sz  = int(budget * 0.25)
-    tail_sz  = budget - head_sz - mid1_sz - mid2_sz
+    pages = _split_pages(text)
+    if not pages:
+        # Fallback: old character-based approach
+        head_sz = int(budget * 0.30)
+        mid1_sz = int(budget * 0.25)
+        mid2_sz = int(budget * 0.25)
+        tail_sz = budget - head_sz - mid1_sz - mid2_sz
+        mid1_start = max(head_sz, int(n * 0.25))
+        mid2_start = max(mid1_start + mid1_sz, int(n * 0.55))
+        return (
+            text[:head_sz]
+            + "\n\n--- [document section ~25%] ---\n\n"
+            + text[mid1_start:mid1_start + mid1_sz]
+            + "\n\n--- [document section ~55%] ---\n\n"
+            + text[mid2_start:mid2_start + mid2_sz]
+            + "\n\n--- [document end section] ---\n\n"
+            + text[-tail_sz:]
+        )
 
-    # First-mid: around 30% through the document
-    mid1_start = max(head_sz, int(n * 0.25))
-    mid1_end   = mid1_start + mid1_sz
+    # Page-aware sampling: select pages from 4 regions
+    total_pages = len(pages)
+    head_pages  = max(1, int(total_pages * 0.30))
+    mid1_start  = max(head_pages, int(total_pages * 0.25))
+    mid1_pages  = max(1, int(total_pages * 0.20))
+    mid2_start  = max(mid1_start + mid1_pages, int(total_pages * 0.55))
+    mid2_pages  = max(1, int(total_pages * 0.20))
+    tail_pages  = max(1, int(total_pages * 0.20))
 
-    # Second-mid: around 60% through the document
-    mid2_start = max(mid1_end, int(n * 0.55))
-    mid2_end   = mid2_start + mid2_sz
+    selected: list[tuple[int, str]] = []
+    selected.extend(pages[:head_pages])
+    selected.extend(pages[mid1_start:mid1_start + mid1_pages])
+    selected.extend(pages[mid2_start:mid2_start + mid2_pages])
+    selected.extend(pages[-tail_pages:])
 
-    return (
-        text[:head_sz]
-        + "\n\n--- [document section ~25%] ---\n\n"
-        + text[mid1_start:mid1_end]
-        + "\n\n--- [document section ~55%] ---\n\n"
-        + text[mid2_start:mid2_end]
-        + "\n\n--- [document end section] ---\n\n"
-        + text[-tail_sz:]
-    )
+    # Deduplicate by page number (regions may overlap)
+    seen = set()
+    unique = []
+    for pg_num, pg_text in selected:
+        if pg_num not in seen:
+            seen.add(pg_num)
+            unique.append((pg_num, pg_text))
+
+    # Reconstruct with page markers, truncating if over budget
+    result_parts = []
+    char_count = 0
+    for pg_num, pg_text in unique:
+        marker = f"\n--- PAGE {pg_num} ---\n"
+        if char_count + len(marker) + len(pg_text) > budget:
+            remaining = budget - char_count - len(marker)
+            if remaining > 200:
+                result_parts.append(marker + pg_text[:remaining])
+            break
+        result_parts.append(marker + pg_text)
+        char_count += len(marker) + len(pg_text)
+
+    return "\n".join(result_parts)
 
 
 def _chunk_text(text: str, chunk_size: int = 6000, overlap: int = 500) -> list[str]:
@@ -231,6 +348,35 @@ def _chunk_text(text: str, chunk_size: int = 6000, overlap: int = 500) -> list[s
         end = start + chunk_size
         chunks.append(text[start:end])
         start = end - overlap
+    return chunks
+
+
+def _chunk_text_by_pages(text: str, chars_per_chunk: int = 8000) -> list[str]:
+    """
+    Split text into chunks on page boundaries.
+    Groups consecutive pages until the chunk exceeds chars_per_chunk.
+    Each chunk retains its page markers so the LLM knows page numbers.
+    """
+    pages = _split_pages(text)
+    if not pages:
+        return _chunk_text(text, chunk_size=chars_per_chunk)
+
+    chunks: list[str] = []
+    current_parts: list[str] = []
+    current_len = 0
+
+    for pg_num, pg_text in pages:
+        entry = f"\n--- PAGE {pg_num} ---\n{pg_text}"
+        if current_len + len(entry) > chars_per_chunk and current_parts:
+            chunks.append("\n".join(current_parts))
+            current_parts = []
+            current_len = 0
+        current_parts.append(entry)
+        current_len += len(entry)
+
+    if current_parts:
+        chunks.append("\n".join(current_parts))
+
     return chunks
 
 
@@ -248,6 +394,9 @@ def _extract_criteria_from_chunk(text_chunk: str, provider: "LLMProvider", chunk
     """Run criteria extraction on a single text chunk."""
     prompt = f"""You are an expert government procurement analyst. Extract ALL eligibility criteria from this tender document{' (' + chunk_label + ')' if chunk_label else ''}.
 
+IMPORTANT: The document text includes page markers like "--- PAGE 5 ---".
+For each criterion you extract, you MUST report the page number where you found it.
+
 TENDER DOCUMENT:
 {text_chunk}
 
@@ -259,21 +408,30 @@ Each criterion must have exactly these fields:
 - "is_mandatory": true or false
 - "threshold_value": the specific number, certification name, or requirement (e.g. "5 crore", "ISO 9001", "3 years", "9mm x 19mm", null if no specific threshold)
 - "extraction_confidence": number 0.0 to 1.0 (your confidence in this extraction)
-- "raw_source_text": the exact sentence or phrase from the document that contains this criterion (max 200 chars)
+- "raw_source_text": the EXACT sentence or phrase from the document that contains this criterion — copy it VERBATIM, do not paraphrase (max 300 chars)
+- "source_page": the page number (integer) where this criterion appears, based on the "--- PAGE N ---" markers in the text
 
-Include ALL types of eligibility criteria:
-- Financial: turnover, EMD, net worth, bid security
-- Technical: product specifications, dimensions, performance requirements, certifications
-- Compliance: GST, registrations, Make-in-India, debarment declarations
-- Documentation: certificates, test reports, appendices required
+You MUST be exhaustive. Include ALL types of eligibility criteria:
+- Financial: turnover requirements, EMD/bid security amounts, net worth, bank guarantees, performance security
+- Technical: product specifications, dimensions, calibre, weight, materials, performance parameters, certifications (BIS, ISO, MIL-STD)
+- Compliance: GST/PAN registration, Make-in-India, MSME, non-blacklisting, debarment declarations, integrity pact
+- Documentation: certificates, test reports, appendices, experience certificates, past supply orders
+- Experience: years in business, number of similar contracts, minimum order quantities
+- Penalty/disqualification: conditions that lead to rejection or disqualification
 
+Do NOT skip criteria that appear in tables, checklists, appendices, or annexures.
 If no eligibility criteria are found in this section, return an empty array: []
 
 Return ONLY the JSON array."""
 
     try:
-        raw = provider.chat(prompt, temperature=0.1)
-        return _extract_json_array(raw)
+        raw = provider.chat(prompt, temperature=0.1, max_tokens=6000)
+        if not raw or not raw.strip():
+            logger.warning(f"Chunk extraction: LLM returned empty response for {chunk_label}")
+            return []
+        result = _extract_json_array(raw)
+        logger.debug(f"Chunk extracted {len(result)} criteria")
+        return result
     except Exception as e:
         logger.warning(f"Chunk extraction failed: {e}")
         return []
@@ -297,21 +455,22 @@ def extract_criteria_from_tender(tender_text: str) -> list[dict]:
     """
     Extract structured eligibility criteria from a tender document.
 
+    Uses page-aware chunking so the LLM can report page numbers.
     For documents under MULTIPASS_THRESHOLD chars: single smart-sampled pass.
-    For longer documents: multi-pass chunked extraction with deduplication.
-    Returns list of criterion dicts.
+    For longer documents: multi-pass page-boundary chunked extraction with deduplication.
+    Returns list of criterion dicts (each includes source_page).
     """
     provider = get_provider()
     logger.info(f"Extracting criteria from {len(tender_text):,} char document via {provider.name}")
 
     if len(tender_text) <= MULTIPASS_THRESHOLD:
-        # Single pass with smart sampling
+        # Single pass with smart sampling (preserves page markers)
         text_sample = _smart_sample(tender_text, budget=20000)
         return _extract_criteria_from_chunk(text_sample, provider)
 
-    # Multi-pass: split into chunks, extract from each, deduplicate
-    logger.info(f"Document exceeds {MULTIPASS_THRESHOLD} chars — using multi-pass extraction")
-    chunks = _chunk_text(tender_text, chunk_size=6000, overlap=500)
+    # Multi-pass: split on page boundaries, extract from each, deduplicate
+    logger.info(f"Document exceeds {MULTIPASS_THRESHOLD} chars — using multi-pass page-aware extraction")
+    chunks = _chunk_text_by_pages(tender_text, chars_per_chunk=6000)
     all_criteria: list[dict] = []
 
     for i, chunk in enumerate(chunks):
@@ -350,10 +509,16 @@ Evaluate carefully and return ONLY a JSON object. No explanation, no markdown, n
 
 Fields required:
 - "verdict": "pass", "fail", or "needs_review" (use needs_review when information is ambiguous, partially present, or unreadable)
-- "confidence": number 0.0 to 1.0 (your confidence in this verdict)
+- "confidence": number 0.0 to 1.0 — CALIBRATE this carefully:
+  * 0.95-1.0: Exact explicit evidence found (e.g., certificate number, exact turnover figure, specific clause match)
+  * 0.75-0.94: Strong evidence but not exact match (e.g., turnover above threshold but not exact format)
+  * 0.50-0.74: Partial or indirect evidence (e.g., related document found but not the exact one required)
+  * 0.25-0.49: Very weak evidence, mostly inferred
+  * 0.0-0.24: No evidence found at all
+  Do NOT default to 0.9 for everything. Use the full range based on actual evidence quality.
 - "extracted_value": the specific value/evidence found in bidder docs (e.g. "Annual turnover: Rs. 7.2 crore"), or null if not found
 - "evidence_snippet": exact quote from bidder document supporting the verdict (max 300 chars), or null
-- "reasoning": 2-3 sentence explanation of why this verdict was reached, referencing specific evidence
+- "reasoning": Concise, jargon-free 1-sentence summary explaining this verdict so an auditor can quickly screen it. Reference specific evidence.
 
 Return ONLY the JSON object."""
 
@@ -430,8 +595,12 @@ def compute_overall_verdict(
 
 def _section_extract(prompt: str, provider: "LLMProvider") -> list[dict]:
     try:
-        raw = provider.chat(prompt, temperature=0.1, max_tokens=3000)
+        raw = provider.chat(prompt, temperature=0.1, max_tokens=6000)
+        if not raw or not raw.strip():
+            logger.warning("Section extraction: LLM returned empty response")
+            return []
         result = _extract_json_array(raw)
+        logger.debug(f"Section extracted {len(result)} items")
         return result
     except Exception as e:
         logger.warning(f"Section extraction failed: {e}")
@@ -444,12 +613,12 @@ def _multipass_section_extract(
     provider: "LLMProvider",
     section_name: str,
     dedup_key: str = "title",
-    chunk_size: int = 8000,
+    chunk_size: int = 6000,
     overlap: int = 800,
 ) -> list[dict]:
     """
     Multi-pass extraction for long documents.
-    Splits text into chunks, runs prompt_builder(chunk) on each,
+    Splits text into page-aware chunks, runs prompt_builder(chunk) on each,
     deduplicates by dedup_key, and returns combined results.
     """
     if len(tender_text) <= MULTIPASS_THRESHOLD:
@@ -458,7 +627,7 @@ def _multipass_section_extract(
         return _section_extract(prompt, provider)
 
     logger.info(f"Multi-pass {section_name}: {len(tender_text):,} chars")
-    chunks = _chunk_text(tender_text, chunk_size=chunk_size, overlap=overlap)
+    chunks = _chunk_text_by_pages(tender_text, chars_per_chunk=chunk_size)
     all_items: list[dict] = []
 
     for i, chunk in enumerate(chunks):
@@ -493,6 +662,9 @@ def extract_documents_section(tender_text: str) -> list[dict]:
     def build_prompt(text_chunk: str) -> str:
         return f"""You are an expert government procurement analyst. Extract ALL documents, certificates, letters, declarations, and forms that a bidder must submit for this tender.
 
+IMPORTANT: The document text includes page markers like "--- PAGE 5 ---".
+For each item, report the page number where you found it.
+
 TENDER DOCUMENT:
 {text_chunk}
 
@@ -507,6 +679,10 @@ Look for:
 - Appendices and annexures referenced in the tender (Appendix-1 through Appendix-N)
 - Any document mentioned in a "checklist" or "list of documents" section
 
+CRITICAL: Do NOT invent or infer certificates from descriptive or conditional text. For example, if the text says "bids with zero rates will be rejected" or "if quotes are abnormally low", DO NOT extract a "Zero Rates Certificate" or "Abnormally Low Rates Certificate". Only extract explicit, named documents that the bidder is explicitly instructed to submit.
+CRITICAL 2: If an item is a general rule, clause, or condition (e.g., "Option Clause", "Denial Clause", "Required Quality"), DO NOT include it here. It belongs in eligibility or scope. ONLY extract physical or digital forms, certificates, or licenses.
+CRITICAL 3: If a document (like "Make in India Certificate") is mentioned multiple times, PRIORITIZE extracting its specific formatting requirements from tables, checklists, or appendices (e.g., details like "percentage of local content" and "location of value addition") over passing text mentions.
+
 Return ONLY a JSON array. Each element represents one document required. No explanation, no markdown, no code blocks.
 
 Each item must have these exact fields:
@@ -518,10 +694,11 @@ Each item must have these exact fields:
 - "how_to_submit": how to submit (e.g. "self-attested copy", "on company letterhead", "notarised", "uploaded on GeM/CPP portal") — null if not specified
 - "details": specific details from the tender about this document — null if not specified
 - "format_notes": notes about format or appendix reference (e.g. "As per Appendix-3", "Format at Page 26") — null if not specified
-- "source_text": the exact phrase or sentence from the document (max 200 chars)
+- "source_text": CRITICAL: The exact phrase or sentence from the document — copy VERBATIM (max 300 chars). Do NOT paraphrase. If not found, use null.
+- "source_page": CRITICAL: The exact integer page number where this was found. Look for the "--- PAGE N ---" marker immediately above the text. Do NOT guess or hallucinate.
 
 Return ONLY the JSON array. If no submission documents found in this section, return [].
-Example: [{{"title": "Bid Securing Declaration", "categories": ["bid security"], "is_mandatory": true, "format_available": true, "summary": "Declaration in lieu of EMD as per tender requirement.", "how_to_submit": "on company letterhead with authorised signatory", "details": "Must be valid for 225 days from bid opening", "format_notes": "As per Appendix-2", "source_text": "Bid securing declaration as per format..."}}]"""
+Example: [{{"title": "Bid Securing Declaration", "categories": ["bid security"], "is_mandatory": true, "format_available": true, "summary": "Declaration in lieu of EMD as per tender requirement.", "how_to_submit": "on company letterhead with authorised signatory", "details": "Must be valid for 225 days from bid opening", "format_notes": "As per Appendix-2", "source_text": "Bid securing declaration as per format...", "source_page": 5}}]"""
 
     return _multipass_section_extract(
         tender_text, build_prompt, provider, "documents", dedup_key="title"
@@ -537,6 +714,9 @@ def extract_scope_section(tender_text: str) -> list[dict]:
 
     def build_prompt(text_chunk: str) -> str:
         return f"""You are an expert government procurement analyst. Extract all scope of work items and requirements from this tender section.
+
+IMPORTANT: The document text includes page markers like "--- PAGE 5 ---".
+For each item, report the page number where you found it.
 
 TENDER DOCUMENT:
 {text_chunk}
@@ -557,11 +737,12 @@ Return ONLY a JSON array. Each element is one distinct scope/requirement item. N
 Each item must have these exact fields:
 - "title": short descriptive name (5-10 words max)
 - "summary": 1-2 clear sentences describing this scope item with SPECIFIC values, numbers, and details from the tender
-- "citations": array of 1-3 direct short quotes from the tender text (each max 200 chars)
-- "source_text": the single most important quote (max 200 chars)
+- "citations": array of 1-3 direct short quotes from the tender text — copy VERBATIM (each max 300 chars). Do NOT paraphrase.
+- "source_text": CRITICAL: The single most important quote — copy VERBATIM. If not found, use null.
+- "source_page": CRITICAL: The exact integer page number. Look for the "--- PAGE N ---" marker immediately above the text. Do NOT guess.
 
 Return ONLY the JSON array. If no scope items found in this section, return [].
-Example: [{{"title": "Supply of 9mm Polymer Based Pistols", "summary": "Supply 400 units of 9mm x 19mm polymer-frame semi-automatic pistols conforming to QR/TD at Appendix-6. Must include 2 magazines per pistol.", "citations": ["Supply of Polymer Based Pistol (9mm), 400 No.", "Each pistol shall be supplied with 02 magazines"], "source_text": "Supply of Polymer Based Pistol (9mm), 400 No."}}]"""
+Example: [{{"title": "Supply of 9mm Polymer Based Pistols", "summary": "Supply 400 units of 9mm x 19mm polymer-frame semi-automatic pistols conforming to QR/TD at Appendix-6. Must include 2 magazines per pistol.", "citations": ["Supply of Polymer Based Pistol (9mm), 400 No.", "Each pistol shall be supplied with 02 magazines"], "source_text": "Supply of Polymer Based Pistol (9mm), 400 No.", "source_page": 3}}]"""
 
     return _multipass_section_extract(
         tender_text, build_prompt, provider, "scope", dedup_key="title"
@@ -578,6 +759,9 @@ def extract_eligibility_rich(tender_text: str) -> list[dict]:
     def build_prompt(text_chunk: str) -> str:
         return f"""You are an expert government procurement analyst. Extract ALL eligibility requirements and qualifying criteria from this tender section.
 
+IMPORTANT: The document text includes page markers like "--- PAGE 5 ---".
+For each requirement, report the page number where you found it.
+
 TENDER DOCUMENT:
 {text_chunk}
 
@@ -589,18 +773,22 @@ Extract every eligibility/qualification requirement including:
 - Documentation: specific certificates, letters, declarations required for eligibility
 - Product specifications that serve as eligibility gates (calibre, dimensions, materials, performance thresholds)
 
+CRITICAL: Do NOT invent or infer eligibility criteria from conditional or descriptive text. For example, if the text says "bids with zero rates will be rejected", DO NOT extract a "Zero/Abnormally Low Rates Certificate" as an eligibility requirement. Only extract explicit, named criteria that the bidder must fulfill or submit.
+CRITICAL 2: YOU MUST INCLUDE general clauses, conditions, and rules (e.g., "Option Clause", "Denial Clause", "Required Quality") as eligibility criteria here, classifying them properly as technical or compliance.
+
 Return ONLY a JSON array. Each element is one eligibility requirement. No explanation, no markdown, no code blocks.
 
 Each item must have these exact fields:
 - "title": short descriptive name (e.g. "Minimum Annual Turnover", "BIS Certification", "EMD / Bid Security")
 - "summary": one sentence stating the requirement clearly with SPECIFIC values/thresholds from the tender
-- "citations": array of 1-3 direct short quotes from the tender text (each max 200 chars)
+- "citations": array of 1-3 direct short quotes from the tender text — copy VERBATIM (each max 300 chars)
 - "is_mandatory": true or false
 - "threshold_value": specific value (e.g. "Rs. 5 crore", "ISO 9001:2015", "3 similar orders", "9mm x 19mm") — null if none
-- "source_text": most relevant quote (max 200 chars)
+- "source_text": CRITICAL: The most relevant quote — copy VERBATIM (max 300 chars). Do NOT paraphrase. If not found, use null.
+- "source_page": CRITICAL: The exact integer page number. Look for the "--- PAGE N ---" marker immediately above the text. Do NOT guess.
 
 Return ONLY the JSON array. If none found in this section, return [].
-Example: [{{"title": "Earnest Money Deposit", "summary": "EMD of Rs. 12,00,000 must be submitted via bank guarantee or demand draft, valid for 225 days.", "citations": ["EMD should be valid up to 225 days from the date of opening of tender", "Rs. 12,00,000/- (Rupees Twelve Lakh) only"], "is_mandatory": true, "threshold_value": "Rs. 12,00,000", "source_text": "Rs. 12,00,000/- (Rupees Twelve Lakh) only"}}]"""
+Example: [{{"title": "Earnest Money Deposit", "summary": "EMD of Rs. 12,00,000 must be submitted via bank guarantee or demand draft, valid for 225 days.", "citations": ["EMD should be valid up to 225 days from the date of opening of tender", "Rs. 12,00,000/- (Rupees Twelve Lakh) only"], "is_mandatory": true, "threshold_value": "Rs. 12,00,000", "source_text": "Rs. 12,00,000/- (Rupees Twelve Lakh) only", "source_page": 7}}]"""
 
     return _multipass_section_extract(
         tender_text, build_prompt, provider, "eligibility", dedup_key="title"
@@ -669,17 +857,17 @@ The object must have exactly these fields (use null for any field not found):
 - "location": delivery or buyer location (e.g. "New Delhi", "Karnataka; Bengaluru Urban") — null if not stated
 - "bid_type": "SERVICE" or "PRODUCT" or "WORKS" — null if not stated
 - "beneficiary": the receiving organisation or authority (full name) — null if not stated
-- "published_date": tender publication date as string (e.g. "25 Mar 2026") — null if not found
-- "bid_opening_date": bid opening / submission deadline date (e.g. "15 Apr 2026") — null if not found
+- "published_date": the date this tender was ISSUED/PUBLISHED (look for "Date:", letterhead date, "Dated"). This is usually at the top of the document.
+- "bid_opening_date": CRITICAL — the LAST DATE for bidders to submit bids / the bid opening/closing date. Look for phrases: "last date for receipt of bids", "submission deadline", "date & time of opening of online tender", "bid opening date", "closing date". This must ALWAYS be LATER than the published_date. NEVER set this to the same date as published_date.
 - "last_activity_date": last date for queries/corrigendum (e.g. "15 Apr 2026") — null if not found
 - "tender_fee_amount": tender document fee (e.g. "₹500", "₹0", "Nil") — null if not stated
 - "tender_fee_exemption_allowed": "Yes" or "No" — null if not stated
-- "emd_fee_amount": EMD / bid security amount (e.g. "₹12,00,000", "Exempted") — null if not stated
+- "emd_fee_amount": EMD / bid security amount (e.g. "₹12,00,000", "Exempted") — CRITICAL: Before stating an exemption, carefully verify if a specific numeric amount is mentioned. If an amount like "120000" or "12 Lakh" is mentioned in the text, it is NOT exempted. Only output the actual extracted numbers. — null if not stated
 - "emd_fee_exemption_allowed": "Yes" or "No" — null if not stated
 - "purchase_preferences": array of applicable purchase preferences (e.g. ["MSE EMD Exemption", "Startup Exemption", "Make in India"]) — empty array [] if none
 
 Return ONLY the JSON object.
-Example: {{"work_description": "Supply of Cotton Terry Towel (MHA) (V2)", "tender_type": "Two Packet Bid", "evaluation_method": "Total value wise evaluation", "location": "Karnataka; Bengaluru Urban", "bid_type": "PRODUCT", "beneficiary": "Inspector General, Frontier HQ, BSF", "published_date": "25 Mar 2026", "bid_opening_date": "15 Apr 2026", "last_activity_date": "15 Apr 2026", "tender_fee_amount": "₹0", "tender_fee_exemption_allowed": "No", "emd_fee_amount": "Exempted", "emd_fee_exemption_allowed": "Yes", "purchase_preferences": ["MSE EMD Exemption", "Startup Exemption"]}}"""
+Example: {{"work_description": "Supply of Cotton Terry Towel", "tender_type": "Two Packet Bid", "bid_type": "PRODUCT", "beneficiary": "BSF", "published_date": "08 Sep 2025", "bid_opening_date": "27 Oct 2025", "last_activity_date": null, "tender_fee_amount": null, "tender_fee_exemption_allowed": null, "emd_fee_amount": "Exempted", "emd_fee_exemption_allowed": "Yes", "evaluation_method": "L1 basis", "location": "New Delhi", "purchase_preferences": ["MSE EMD Exemption"]}}"""
     return _section_extract_obj(prompt, provider)
 
 
@@ -693,6 +881,9 @@ def extract_items_section(tender_text: str) -> list[dict]:
     def build_prompt(text_chunk: str) -> str:
         return f"""You are an expert government procurement analyst. Extract all items, goods, and services to be procured from this tender section, along with their DETAILED specifications.
 
+IMPORTANT: The document text includes page markers like "--- PAGE 5 ---".
+For each item, report the page number where you found it.
+
 TENDER DOCUMENT:
 {text_chunk}
 
@@ -704,21 +895,24 @@ Extract each item with its full technical specifications. Look for:
 - Packaging and marking requirements
 - Accessories and components included (magazines, holsters, cleaning kits, etc.)
 
+CRITICAL: DO NOT extract items from generic templates, blank formats, checklists, or sample BOQs (Bill of Quantities) unless they are specifically filled out with actual procurement data. Focus ONLY on the actual, primary goods/services being procured by this specific tender. Do not extract every minor spare part unless listed as a main BOQ line item.
+
 Return ONLY a JSON array. Each element is one line item. No explanation, no markdown, no code blocks.
 
 Each item must have these exact fields:
 - "item_name": full name of the item or service with key spec (e.g. "9mm x 19mm Polymer Based Semi-Automatic Pistol")
 - "quantity": numeric quantity as a string (e.g. "400", "12,000")
-- "quantity_unit": unit of measurement (e.g. "Nos", "Sets", "Pairs", "MT") — null if not specified
-- "delivery_location": delivery address or consignee location — null if not specified
-- "consignee": name of the person/office receiving goods — null if not specified
-- "delivery_period": delivery timeline (e.g. "105 days", "12 months") — null if not specified
-- "specifications_ref": reference to specification appendix (e.g. "Appendix-6", "QR/TD") — null if not specified
-- "specifications": array of key specification strings (e.g. ["Calibre: 9mm x 19mm", "Weight: ≤850g with empty magazine", "Magazine capacity: 15 rounds minimum", "Barrel length: 95-115mm"]) — empty array [] if no specs found
-- "source_text": exact quote from the document (max 200 chars)
+- "quantity_unit": unit of measurement (e.g. "Nos", "Sets", "Pairs", "MT") -- null if not specified
+- "delivery_location": delivery address or consignee location -- null if not specified
+- "consignee": name of the person/office receiving goods -- null if not specified
+- "delivery_period": delivery timeline (e.g. "105 days", "12 months") -- null if not specified
+- "specifications_ref": reference to specification appendix (e.g. "Appendix-6", "QR/TD") -- null if not specified
+- "specifications": array of key specification strings -- empty array [] if no specs found
+- "source_text": exact quote from the document -- copy VERBATIM (max 300 chars)
+- "source_page": the page number (integer) where this was found, based on the "--- PAGE N ---" markers
 
 Return ONLY the JSON array. If no items found in this section, return [].
-Example: [{{"item_name": "9mm x 19mm Polymer Based Semi-Automatic Pistol", "quantity": "400", "quantity_unit": "Nos", "delivery_location": "CRPF, New Delhi", "consignee": "Commandant (Proc)Dte", "delivery_period": "12 months", "specifications_ref": "Appendix-6 QR/TD", "specifications": ["Calibre: 9mm x 19mm", "Action: Semi-automatic, recoil operated", "Weight: max 850g with empty magazine", "Magazine capacity: min 15 rounds", "Barrel length: 95-115mm"], "source_text": "Supply of Polymer Based Pistol (9mm), 400 No."}}]"""
+Example: [{{"item_name": "9mm Polymer Based Pistol", "quantity": "400", "quantity_unit": "Nos", "delivery_location": "CRPF, New Delhi", "consignee": "Commandant", "delivery_period": "12 months", "specifications_ref": "Appendix-6", "specifications": ["Calibre: 9mm x 19mm"], "source_text": "Supply of Polymer Based Pistol (9mm), 400 No.", "source_page": 12}}]"""
 
     return _multipass_section_extract(
         tender_text, build_prompt, provider, "items", dedup_key="item_name"
@@ -775,7 +969,8 @@ TENDER DOCUMENT:
 
 QUESTION: {question}
 
-Provide a clear, concise answer grounded in the tender document. Use bullet points if listing multiple items. Do not make up information not present in the document."""
+Provide a clear, concise answer grounded in the tender document. Use bullet points if listing multiple items. Do not make up information not present in the document.
+When asked about dates or deadlines, provide a concise, definitive answer. Act as an analyst and explicitly interpret tender terminology (e.g., if asked "when is the last day to file", explicitly state that "receipt of online tenders" or "closing date" is the submission deadline)."""
 
     try:
         return provider.chat(prompt, temperature=0.2, max_tokens=1024)

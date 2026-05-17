@@ -7,11 +7,12 @@ from typing import Optional
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response, StreamingResponse, FileResponse
 from pydantic import BaseModel
 import json as _json
 from sqlmodel import Session, select
 
+import audit
 import database
 import models
 from database import get_session
@@ -19,6 +20,7 @@ from evaluator import run_bidder_evaluation
 from llm import extract_criteria_from_tender, compute_overall_verdict, get_provider, analyze_tender_full, extract_overview_section, extract_items_section, answer_question
 from pdf_parser import extract_text
 from report_generator import generate_report
+from source_locator import locate_source, render_page_image, get_pdf_page_count
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -111,6 +113,7 @@ def _process_tender_background(tender_id: int):
                     threshold_value=c.get("threshold_value"),
                     extraction_confidence=float(c.get("extraction_confidence", 0.5)),
                     raw_source_text=str(c.get("raw_source_text", ""))[:500],
+                    source_page=c.get("source_page"),
                 )
                 session.add(criterion)
 
@@ -143,6 +146,11 @@ def _process_tender_background(tender_id: int):
             session.add(tender)
             session.commit()
             logger.info(f"Tender {tender_id}: {len(criteria_list)} criteria + full analysis done")
+            audit.log_event(session, audit.EV_TENDER_ANALYZED, {
+                "tender_id": tender_id, "tender_name": tender.name,
+                "criteria_count": len(criteria_list),
+                "sections": ["documents", "scope_of_work", "eligibility", "contacts", "items", "overview"],
+            }, tender_id=tender_id)
         except Exception as e:
             logger.error(f"Tender {tender_id} processing failed: {e}")
             tender.status = "error"
@@ -184,9 +192,11 @@ def _reanalyze_background(tender_id: int):
             session.add(tender)
             session.commit()
             logger.info(f"Tender {tender_id}: re-analysis complete")
+            audit.log_event(session, audit.EV_TENDER_REANALYZED,
+                {"tender_id": tender_id, "tender_name": tender.name},
+                tender_id=tender_id)
         except Exception as e:
             logger.error(f"Tender {tender_id} re-analysis failed: {e}")
-            # Don't mark as error — criteria are still intact
             tender.status = "ready"
             session.add(tender)
             session.commit()
@@ -197,6 +207,12 @@ def _process_bidder_background(bidder_id: int):
     with Session(database.engine) as session:
         try:
             run_bidder_evaluation(bidder_id, session)
+            bidder = session.get(models.Bidder, bidder_id)
+            if bidder:
+                audit.log_event(session, audit.EV_BIDDER_EVALUATED, {
+                    "bidder_id": bidder_id, "bidder_name": bidder.name,
+                    "verdict": bidder.overall_verdict, "risk_score": bidder.risk_score,
+                }, tender_id=bidder.tender_id, bidder_id=bidder_id)
         except Exception as e:
             logger.error(f"Bidder {bidder_id} evaluation failed: {e}")
             bidder = session.get(models.Bidder, bidder_id)
@@ -226,7 +242,7 @@ async def upload_tender(
         shutil.copyfileobj(file.file, f)
 
     try:
-        raw_text, method = extract_text(filepath)
+        raw_text, method, page_count = extract_text(filepath)
     except Exception as e:
         raise HTTPException(422, f"Could not extract text from file: {e}")
 
@@ -236,11 +252,18 @@ async def upload_tender(
         filename=unique_name,
         raw_text=raw_text,
         extraction_method=method,
+        page_count=page_count,
         status="processing",
     )
     session.add(tender)
     session.commit()
     session.refresh(tender)
+
+    audit.log_event(session, audit.EV_TENDER_UPLOADED, {
+        "tender_id": tender.id, "tender_name": tender.name,
+        "filename": file.filename, "extraction_method": method,
+        "page_count": page_count,
+    }, tender_id=tender.id)
 
     background_tasks.add_task(_process_tender_background, tender.id)
 
@@ -258,6 +281,17 @@ def list_tenders(session: Session = Depends(get_session)):
         bidder_count = len(session.exec(
             select(models.Bidder).where(models.Bidder.tender_id == t.id)
         ).all())
+        # Pull overview metadata from TenderAnalysis if available
+        analysis = session.exec(
+            select(models.TenderAnalysis).where(models.TenderAnalysis.tender_id == t.id)
+        ).first()
+        overview = {}
+        if analysis and analysis.overview_json:
+            try:
+                overview = _json.loads(analysis.overview_json)
+            except Exception:
+                pass
+
         result.append({
             "id": t.id,
             "name": t.name,
@@ -266,8 +300,14 @@ def list_tenders(session: Session = Depends(get_session)):
             "criterion_count": criterion_count,
             "bidder_count": bidder_count,
             "extraction_method": t.extraction_method,
+            "tender_type": overview.get("tender_type"),
+            "bid_opening_date": overview.get("bid_opening_date"),
+            "emd_fee_amount": overview.get("emd_fee_amount"),
+            "work_description": overview.get("work_description"),
+            "location": overview.get("location"),
         })
     return result
+
 
 
 @app.get("/api/tenders/{tender_id}")
@@ -284,19 +324,49 @@ def get_tender(tender_id: int, session: Session = Depends(get_session)):
         "status": tender.status,
         "upload_time": tender.upload_time.isoformat(),
         "extraction_method": tender.extraction_method,
-        "criteria": [
-            {
-                "id": c.id,
-                "criterion_type": c.criterion_type,
-                "description": c.description,
-                "is_mandatory": c.is_mandatory,
-                "threshold_value": c.threshold_value,
-                "extraction_confidence": c.extraction_confidence,
-                "raw_source_text": c.raw_source_text,
-            }
-            for c in criteria
-        ],
+        "criteria_count": len(criteria),
+        "criteria": criteria,
     }
+
+@app.get("/api/tenders/{tender_id}/file")
+def get_tender_file(tender_id: int, session: Session = Depends(get_session)):
+    tender = session.get(models.Tender, tender_id)
+    if not tender:
+        raise HTTPException(404, "Tender not found")
+    filepath = os.path.join(UPLOAD_DIR, tender.filename)
+    if not os.path.exists(filepath):
+        raise HTTPException(404, "File not found on disk")
+    return FileResponse(filepath, media_type="application/pdf", content_disposition_type="inline")
+
+
+@app.post("/api/tenders/{tender_id}/reextract-overview")
+def reextract_overview(tender_id: int, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
+    """Re-run the overview extraction for an existing tender (useful after LLM prompt improvements)."""
+    tender = session.get(models.Tender, tender_id)
+    if not tender:
+        raise HTTPException(404, "Tender not found")
+    background_tasks.add_task(_reextract_overview_background, tender_id)
+    return {"status": "queued", "tender_id": tender_id}
+
+def _reextract_overview_background(tender_id: int):
+    """Re-extract just the overview section for a single tender."""
+    with Session(database.engine) as session:
+        tender = session.get(models.Tender, tender_id)
+        if not tender:
+            return
+        try:
+            from llm import extract_overview_section
+            overview = extract_overview_section(tender.raw_text)
+            ta = session.exec(
+                select(models.TenderAnalysis).where(models.TenderAnalysis.tender_id == tender_id)
+            ).first()
+            if ta:
+                ta.overview_json = _json.dumps(overview)
+                session.add(ta)
+                session.commit()
+                logger.info(f"Re-extracted overview for tender {tender_id}: {overview.get('bid_opening_date')}")
+        except Exception as e:
+            logger.error(f"Overview re-extraction failed for tender {tender_id}: {e}")
 
 
 @app.get("/api/tenders/{tender_id}/analysis")
@@ -330,6 +400,81 @@ def get_tender_analysis(tender_id: int, session: Session = Depends(get_session))
         "contacts":      _json.loads(ta.contacts_json    or "[]"),
         "items":         _json.loads(ta.items_json       or "[]"),
         "generated_at":  ta.generated_at.isoformat() if ta.generated_at else None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Source provenance endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/api/tenders/{tender_id}/page/{page_num}/image")
+def get_page_image(
+    tender_id: int,
+    page_num: int,
+    highlight_x0: Optional[float] = None,
+    highlight_y0: Optional[float] = None,
+    highlight_x1: Optional[float] = None,
+    highlight_y1: Optional[float] = None,
+    session: Session = Depends(get_session),
+):
+    """Render a PDF page as a PNG image with optional highlight rectangle."""
+    tender = session.get(models.Tender, tender_id)
+    if not tender:
+        raise HTTPException(404, "Tender not found")
+
+    filepath = os.path.join(UPLOAD_DIR, tender.filename)
+    if not os.path.exists(filepath):
+        raise HTTPException(404, "PDF file not found on disk")
+
+    highlight_bbox = None
+    if all(v is not None for v in [highlight_x0, highlight_y0, highlight_x1, highlight_y1]):
+        highlight_bbox = {"x0": highlight_x0, "y0": highlight_y0, "x1": highlight_x1, "y1": highlight_y1}
+
+    try:
+        img_bytes = render_page_image(filepath, page_num, zoom=2.0, highlight_bbox=highlight_bbox)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"Failed to render page: {e}")
+
+    return Response(content=img_bytes, media_type="image/png")
+
+
+class SourceProofRequest(BaseModel):
+    source_text: str
+    page_hint: Optional[int] = None
+
+
+@app.post("/api/tenders/{tender_id}/source-proof")
+def get_source_proof(
+    tender_id: int,
+    body: SourceProofRequest,
+    session: Session = Depends(get_session),
+):
+    """Locate source text in the PDF and return page + bounding box for highlighting."""
+    tender = session.get(models.Tender, tender_id)
+    if not tender:
+        raise HTTPException(404, "Tender not found")
+
+    filepath = os.path.join(UPLOAD_DIR, tender.filename)
+    if not os.path.exists(filepath):
+        raise HTTPException(404, "PDF file not found on disk")
+
+    result = locate_source(filepath, body.source_text, page_hint=body.page_hint)
+
+    # Build image URL with highlight params
+    image_url = f"/api/tenders/{tender_id}/page/{result['page']}/image"
+    if result.get("bbox"):
+        b = result["bbox"]
+        image_url += f"?highlight_x0={b['x0']}&highlight_y0={b['y0']}&highlight_x1={b['x1']}&highlight_y1={b['y1']}"
+
+    return {
+        "page": result["page"],
+        "bbox": result.get("bbox"),
+        "confidence": result["confidence"],
+        "found": result["found"],
+        "image_url": image_url,
+        "page_count": tender.page_count,
     }
 
 
@@ -409,7 +554,7 @@ async def upload_bidder(
         shutil.copyfileobj(file.file, f)
 
     try:
-        raw_text, method = extract_text(filepath)
+        raw_text, method, _ = extract_text(filepath)
     except Exception as e:
         raise HTTPException(422, f"Could not extract text: {e}")
 
@@ -425,6 +570,11 @@ async def upload_bidder(
     session.add(bidder)
     session.commit()
     session.refresh(bidder)
+
+    audit.log_event(session, audit.EV_BIDDER_UPLOADED, {
+        "bidder_id": bidder.id, "bidder_name": bidder.name,
+        "filename": file.filename, "extraction_method": method,
+    }, tender_id=tender.id, bidder_id=bidder.id)
 
     background_tasks.add_task(_process_bidder_background, bidder.id)
 
@@ -461,6 +611,7 @@ def list_bidders(tender_id: int, session: Session = Depends(get_session)):
             "criteria_fail": failed,
             "criteria_review": review,
             "match_score": match_score,
+            "risk_score": b.risk_score,
         })
     return result
 
@@ -518,8 +669,20 @@ def get_bidder(tender_id: int, bidder_id: int, session: Session = Depends(get_se
         "overall_reasoning": bidder.overall_reasoning,
         "upload_time": bidder.upload_time.isoformat(),
         "extraction_method": bidder.extraction_method,
+        "risk_score": bidder.risk_score,
         "criteria_evaluations": criteria_evals,
     }
+
+@app.get("/api/tenders/{tender_id}/bidders/{bidder_id}/file")
+def get_bidder_file(tender_id: int, bidder_id: int, session: Session = Depends(get_session)):
+    bidder = session.get(models.Bidder, bidder_id)
+    if not bidder or bidder.tender_id != tender_id:
+        raise HTTPException(404, "Bidder not found")
+    filepath = os.path.join(UPLOAD_DIR, bidder.filename)
+    if not os.path.exists(filepath):
+        raise HTTPException(404, "File not found on disk")
+    return FileResponse(filepath, media_type="application/pdf", content_disposition_type="inline")
+
 
 
 # ---------------------------------------------------------------------------
@@ -549,6 +712,8 @@ def review_evaluation(
     eval_rec.human_note = body.human_note
     eval_rec.reviewed_by = body.reviewed_by
     eval_rec.reviewed_at = datetime.utcnow()
+    # A human override implies 100% confidence in the new verdict
+    eval_rec.confidence = 1.0
     session.add(eval_rec)
     session.commit()
 
@@ -577,11 +742,53 @@ def review_evaluation(
         session.add(bidder)
         session.commit()
 
+        audit.log_event(session, audit.EV_VERDICT_OVERRIDDEN, {
+            "evaluation_id": evaluation_id, "criterion_id": eval_rec.criterion_id,
+            "bidder_id": bidder.id, "bidder_name": bidder.name,
+            "human_verdict": body.human_verdict, "human_note": body.human_note,
+            "reviewed_by": body.reviewed_by, "updated_overall_verdict": new_verdict
+        }, tender_id=bidder.tender_id, bidder_id=bidder.id, evaluation_id=evaluation_id, actor=body.reviewed_by or "Reviewer", actor_type="human")
+
     return {
         "evaluation_id": evaluation_id,
         "human_verdict": eval_rec.human_verdict,
         "updated_overall_verdict": bidder.overall_verdict if bidder else None,
     }
+
+# ---------------------------------------------------------------------------
+# Audit Trail
+# ---------------------------------------------------------------------------
+
+@app.get("/api/tenders/{tender_id}/audit")
+def get_audit_trail(tender_id: int, session: Session = Depends(get_session)):
+    tender = session.get(models.Tender, tender_id)
+    if not tender:
+        raise HTTPException(404, "Tender not found")
+        
+    events = session.exec(
+        select(models.AuditLog).where(models.AuditLog.tender_id == tender_id).order_by(models.AuditLog.id)
+    ).all()
+    
+    return [
+        {
+            "id": e.id,
+            "event_type": e.event_type,
+            "actor": e.actor,
+            "actor_type": e.actor_type,
+            "payload": _json.loads(e.payload_json),
+            "timestamp": e.timestamp.isoformat(),
+            "hash": e.hash,
+        }
+        for e in events
+    ]
+
+@app.get("/api/tenders/{tender_id}/audit/verify")
+def verify_audit_trail(tender_id: int, session: Session = Depends(get_session)):
+    tender = session.get(models.Tender, tender_id)
+    if not tender:
+        raise HTTPException(404, "Tender not found")
+        
+    return audit.verify_chain(session, tender_id)
 
 
 # ---------------------------------------------------------------------------
@@ -706,6 +913,10 @@ def get_compare_data(tender_id: int, session: Session = Depends(get_session)):
                 "confidence": e.confidence if e else None,
                 "evaluation_id": e.id if e else None,
             }
+        
+        # Add risk score to the row
+        row["risk_score"] = bidder.risk_score
+        
         matrix.append(row)
 
     return {

@@ -2,13 +2,14 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { getBidder, BidderDetail, CriterionEvaluation, TYPE_COLOR, VERDICT_LABEL } from "@/lib/api";
+import { getBidder, getBidderFileUrl, BidderDetail, CriterionEvaluation, TYPE_COLOR, VERDICT_LABEL } from "@/lib/api";
 import VerdictBadge from "@/components/VerdictBadge";
 import ConfidenceBar from "@/components/ConfidenceBar";
 import ReviewPanel from "@/components/ReviewPanel";
-import { ArrowLeft, Download, Loader2, ClipboardCheck } from "lucide-react";
+import SplitWorkspace, { useProvenance } from "@/components/SplitWorkspace";
+import { ArrowLeft, Download, Loader2, ClipboardCheck, ShieldAlert, FileText, Eye } from "lucide-react";
 
-export default function EvaluationPage() {
+function EvaluationContent() {
   const { tenderId, bidderId } = useParams<{ tenderId: string; bidderId: string }>();
   const tId = parseInt(tenderId);
   const bId = parseInt(bidderId);
@@ -21,6 +22,8 @@ export default function EvaluationPage() {
   const [filterType, setFilterType] = useState<string>("ALL");
 
   const toggleEvidence = (id: number) => setExpandedEvidence((p) => ({ ...p, [id]: !p[id] }));
+
+  const { openProvenance } = useProvenance();
 
   const fetchBidder = useCallback(async () => {
     try {
@@ -61,8 +64,9 @@ export default function EvaluationPage() {
   }
 
   return (
-    <div>
-      {/* Breadcrumb */}
+    
+      <div className="max-w-[1200px] mx-auto pb-10">
+        {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-4 text-sm text-slate-500">
         <Link href="/" className="hover:text-slate-700">Dashboard</Link>
         <span className="text-slate-300">/</span>
@@ -71,30 +75,83 @@ export default function EvaluationPage() {
         <span className="text-slate-700 font-medium truncate">{bidder.name}</span>
       </div>
 
-      {/* Header bar */}
-      <div className="bg-[#1e3a5f] text-white rounded-xl px-6 py-4 flex items-center justify-between mb-6 shadow">
-        <div>
-          <h2 className="text-xl font-bold">{bidder.name}</h2>
-          {bidder.overall_reasoning && (
-            <p className="text-blue-300 text-xs mt-0.5 max-w-xl">{bidder.overall_reasoning}</p>
-          )}
+      {/* Header bar / Executive Summary */}
+      <div className="bg-white border border-slate-200 rounded-xl mb-6 shadow-sm overflow-hidden">
+        <div className="bg-[#1e3a5f] px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/10 p-2 rounded-lg">
+              <FileText className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">{bidder.name}</h2>
+              <p className="text-blue-200 text-sm">Bidder Submission Evaluation</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <a
+              href={`http://localhost:8000/api/tenders/${tId}/report`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 bg-white text-[#1e3a5f] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors shadow"
+            >
+              <Download className="w-4 h-4" /> Export Report
+            </a>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          {bidder.status === "processing" ? (
-            <span className="flex items-center gap-2 text-sm text-blue-200">
-              <Loader2 className="w-4 h-4 animate-spin" /> Evaluating...
-            </span>
-          ) : (
-            <VerdictBadge verdict={bidder.overall_verdict} size="lg" />
-          )}
-          <a
-            href={`http://localhost:8000/api/tenders/${tId}/report`}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 bg-white text-[#1e3a5f] px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
-          >
-            <Download className="w-4 h-4" /> Export Report
-          </a>
+
+        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Status & Verdict */}
+          <div className="border-r border-slate-100 pr-6">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Overall Verdict</h3>
+            {bidder.status === "processing" ? (
+              <span className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 w-fit">
+                <Loader2 className="w-4 h-4 animate-spin" /> Evaluating...
+              </span>
+            ) : (
+              <VerdictBadge verdict={bidder.overall_verdict} size="lg" />
+            )}
+            
+            {bidder.risk_score != null && (
+              <div className="mt-5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <ShieldAlert className="w-3.5 h-3.5" /> Risk Profile
+                  </h3>
+                  <span className={`text-sm font-bold ${
+                    bidder.risk_score < 30 ? "text-green-600" :
+                    bidder.risk_score < 60 ? "text-amber-600" : "text-red-600"
+                  }`}>{bidder.risk_score} / 100</span>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full ${
+                      bidder.risk_score < 30 ? "bg-green-500" :
+                      bidder.risk_score < 60 ? "bg-amber-500" : "bg-red-500"
+                    }`}
+                    style={{ width: `${bidder.risk_score}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* AI Executive Summary */}
+          <div className="md:col-span-2">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Executive Summary</h3>
+            <div className="bg-slate-50 border border-slate-100 rounded-lg p-4">
+              {bidder.status === "processing" ? (
+                <div className="flex items-center gap-2 text-slate-400 text-sm italic">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating executive summary...
+                </div>
+              ) : bidder.overall_reasoning ? (
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {bidder.overall_reasoning}
+                </p>
+              ) : (
+                <p className="text-sm text-slate-400 italic">No summary generated.</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -199,19 +256,31 @@ export default function EvaluationPage() {
                         {evaluation ? (
                           <div>
                             {evaluation.evidence_snippet && (
-                              <p className="text-xs text-slate-500 italic leading-relaxed">
-                                {isExpanded
-                                  ? `"${evaluation.evidence_snippet}"`
-                                  : `"${evaluation.evidence_snippet.slice(0, 80)}${evaluation.evidence_snippet.length > 80 ? "..." : ""}"`}
-                                {evaluation.evidence_snippet.length > 80 && (
+                              <div>
+                                <p className="text-xs text-slate-500 italic leading-relaxed mb-1">
+                                  {isExpanded
+                                    ? `"${evaluation.evidence_snippet}"`
+                                    : `"${evaluation.evidence_snippet.slice(0, 80)}${evaluation.evidence_snippet.length > 80 ? "..." : ""}"`}
+                                  {evaluation.evidence_snippet.length > 80 && (
+                                    <button
+                                      onClick={() => toggleEvidence(criterion.id)}
+                                      className="ml-1 text-blue-500 hover:underline text-xs"
+                                    >
+                                      {isExpanded ? "less" : "more"}
+                                    </button>
+                                  )}
+                                </p>
+                                {criterion.source_page && (
                                   <button
-                                    onClick={() => toggleEvidence(criterion.id)}
-                                    className="ml-1 text-blue-500 hover:underline text-xs"
+                                    onClick={() => openProvenance(criterion.source_page!, evaluation.evidence_snippet || undefined)}
+                                    className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded hover:bg-blue-100 hover:border-blue-300 transition-colors cursor-pointer font-medium mt-1"
+                                    title={`View source on page ${criterion.source_page}`}
                                   >
-                                    {isExpanded ? "less" : "more"}
+                                    <Eye className="w-3 h-3" />
+                                    Page {criterion.source_page}
                                   </button>
                                 )}
-                              </p>
+                              </div>
                             )}
                             {evaluation.human_verdict && evaluation.human_verdict !== evaluation.verdict && (
                               <p className="text-xs text-blue-600 font-medium mt-1 flex items-center gap-0.5">
@@ -260,5 +329,17 @@ export default function EvaluationPage() {
         />
       )}
     </div>
+    
+  );
+}
+
+export default function EvaluationPage() {
+  const { tenderId, bidderId } = useParams<{ tenderId: string; bidderId: string }>();
+  const tId = parseInt(tenderId);
+  const bId = parseInt(bidderId);
+  return (
+    
+      <EvaluationContent />
+    
   );
 }

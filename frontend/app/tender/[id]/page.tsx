@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   getTender, uploadBidder, listBidders,
-  getTenderAnalysis, reanalyzeTender,
+  getTenderAnalysis, reanalyzeTender, getTenderFileUrl,
   Bidder, TenderAnalysisData, Criterion,
 } from "@/lib/api";
 import TenderAnalysisView from "@/components/TenderAnalysisView";
 import BidderSummaryCard from "@/components/BidderSummaryCard";
 import FileUpload from "@/components/FileUpload";
+import SplitWorkspace from "@/components/SplitWorkspace";
 import { ArrowLeft, BarChart2, Loader2, CheckCircle2 } from "lucide-react";
 
 export default function TenderDetailPage() {
@@ -111,56 +112,59 @@ export default function TenderDetailPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* LEFT: Tender Analysis */}
-        <div className="lg:col-span-3">
-          <TenderAnalysisView
-            analysis={analysis}
-            loading={analysisLoading}
-            tenderStatus={tenderStatus}
-            tenderFilename={tender?.name}
-            tenderId={tenderId}
-            criteria={criteria}
-            onReanalyze={handleReanalyze}
-          />
+      <SplitWorkspace fileUrl={getTenderFileUrl(tenderId)}>
+        <div className="flex flex-col gap-8 w-full">
+          {/* TOP/LEFT: Tender Analysis */}
+          <div>
+            <TenderAnalysisView
+              analysis={analysis}
+              loading={analysisLoading}
+              tenderStatus={tenderStatus}
+              tenderFilename={tender?.name}
+              tenderId={tenderId}
+              criteria={criteria}
+              onReanalyze={handleReanalyze}
+            />
+          </div>
+
         </div>
+      </SplitWorkspace>
 
-        {/* RIGHT: Bidder Submissions */}
-        <div className="lg:col-span-2">
-          <h3 className="font-semibold text-slate-700 mb-3">Bidder Submissions</h3>
+      {/* BOTTOM (Below Workspace): Bidder Submissions */}
+      <div className="mt-12 mb-10 border-t border-slate-200 pt-8">
+        <h3 className="font-bold text-xl text-slate-800 mb-4 font-serif">Bidder Submissions & Evaluation</h3>
 
-          {tenderStatus !== "ready" ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-sm text-amber-700 flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-              Criteria extraction in progress. You can upload bidders once the tender is ready.
-            </div>
-          ) : (
-            <div className="mb-4">
-              <FileUpload
-                onUpload={handleBidderUpload}
-                label="Upload Bidder Document"
-              />
-              {uploadSuccess && (
-                <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span><strong>{uploadSuccess}</strong> uploaded. Evaluating in background...</span>
-                </div>
-              )}
-            </div>
-          )}
+        {tenderStatus !== "ready" ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-sm text-amber-700 flex items-center gap-2 max-w-xl">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            Criteria extraction in progress. You can upload bidders once the tender is ready.
+          </div>
+        ) : (
+          <div className="mb-6 max-w-xl">
+            <FileUpload
+              onUpload={handleBidderUpload}
+              label="Upload Bidder Document"
+            />
+            {uploadSuccess && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-green-600 bg-green-50 p-2 rounded-md border border-green-200">
+                <CheckCircle2 className="w-4 h-4" />
+                <span><strong>{uploadSuccess}</strong> uploaded successfully. Evaluating in background...</span>
+              </div>
+            )}
+          </div>
+        )}
 
-          {bidders.length === 0 ? (
-            <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">
-              No bidders uploaded yet
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {bidders.map((b) => (
-                <BidderSummaryCard key={b.id} bidder={b} tenderId={tenderId} />
-              ))}
-            </div>
-          )}
-        </div>
+        {bidders.length === 0 ? (
+          <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-sm bg-slate-50 max-w-4xl">
+            No bidders uploaded yet
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {bidders.map((b) => (
+              <BidderSummaryCard key={b.id} bidder={b} tenderId={tenderId} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

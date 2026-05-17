@@ -75,23 +75,32 @@ export default function ReviewPanel({ criterion, evaluation, onClose, onSaved }:
             )}
           </div>
 
-          {/* AI result */}
-          <div className="border border-slate-200 rounded-lg p-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">AI Evaluation</h3>
+          {/* AI / Human result */}
+          <div className={`border rounded-lg p-4 ${evaluation.human_verdict ? 'border-blue-300 bg-blue-50' : 'border-slate-200'}`}>
+            <h3 className="text-xs font-semibold uppercase tracking-wide mb-3 flex items-center justify-between">
+              <span className={evaluation.human_verdict ? 'text-blue-700' : 'text-slate-500'}>
+                {evaluation.human_verdict ? 'Human Evaluated' : 'AI Evaluation'}
+              </span>
+              {evaluation.human_verdict && (
+                <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Reviewed
+                </span>
+              )}
+            </h3>
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
-                <p className="text-xs text-slate-400 mb-1">Verdict</p>
+                <p className={`text-xs mb-1 ${evaluation.human_verdict ? 'text-blue-600' : 'text-slate-400'}`}>Verdict</p>
                 <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                  evaluation.verdict === "pass" ? "bg-green-100 text-green-700" :
-                  evaluation.verdict === "fail" ? "bg-red-100 text-red-700" :
+                  (evaluation.human_verdict || evaluation.verdict) === "pass" ? "bg-green-100 text-green-700" :
+                  (evaluation.human_verdict || evaluation.verdict) === "fail" ? "bg-red-100 text-red-700" :
                   "bg-amber-100 text-amber-700"
                 }`}>
-                  {VERDICT_LABEL[evaluation.verdict || ""] || evaluation.verdict}
+                  {VERDICT_LABEL[evaluation.human_verdict || evaluation.verdict || ""] || evaluation.human_verdict || evaluation.verdict}
                 </span>
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-1">Confidence</p>
-                <ConfidenceBar value={evaluation.confidence || 0} />
+                <p className={`text-xs mb-1 ${evaluation.human_verdict ? 'text-blue-600' : 'text-slate-400'}`}>Confidence</p>
+                <ConfidenceBar value={evaluation.human_verdict ? 1.0 : (evaluation.confidence || 0)} />
               </div>
             </div>
             {evaluation.extracted_value && (

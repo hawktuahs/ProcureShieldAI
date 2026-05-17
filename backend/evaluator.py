@@ -11,10 +11,45 @@ from llm import evaluate_criterion, compute_overall_verdict
 logger = logging.getLogger(__name__)
 
 
+def _compute_risk_score(evaluations: list[dict], criteria: list) -> int:
+    """
+    Compute a 0-100 risk score for a bidder (higher = riskier).
+    
+    Formula:
+    - Start at 0
+    - Each mandatory FAIL: +15 points
+    - Each mandatory NEEDS_REVIEW: +8 points  
+    - Each optional FAIL: +4 points
+    - Each optional NEEDS_REVIEW: +2 points
+    - Low overall confidence (avg < 0.6): +10 points
+    - Capped at 100
+    """
+    score = 0
+    confidences = []
+
+    for result, criterion in zip(evaluations, criteria):
+        v = result.get("verdict", "needs_review")
+        is_mandatory = criterion.is_mandatory
+        conf = float(result.get("confidence", 0.5))
+        confidences.append(conf)
+
+        if v == "fail":
+            score += 15 if is_mandatory else 4
+        elif v == "needs_review":
+            score += 8 if is_mandatory else 2
+
+    if confidences:
+        avg_conf = sum(confidences) / len(confidences)
+        if avg_conf < 0.6:
+            score += 10
+
+    return min(score, 100)
+
+
 def run_bidder_evaluation(bidder_id: int, session: Session) -> None:
     """
     Evaluate all criteria for a bidder and persist results.
-    Updates bidder.status and bidder.overall_verdict when done.
+    Updates bidder.status, bidder.overall_verdict, and bidder.risk_score when done.
     """
     bidder = session.get(Bidder, bidder_id)
     if not bidder:
@@ -29,6 +64,7 @@ def run_bidder_evaluation(bidder_id: int, session: Session) -> None:
         bidder.status = "evaluated"
         bidder.overall_verdict = "needs_review"
         bidder.overall_reasoning = "No criteria found for this tender."
+        bidder.risk_score = 50
         session.add(bidder)
         session.commit()
         return
@@ -77,9 +113,13 @@ def run_bidder_evaluation(bidder_id: int, session: Session) -> None:
     ]
     overall_verdict, overall_reasoning = compute_overall_verdict(evaluations, criteria_dicts)
 
+    # Compute risk score
+    risk_score = _compute_risk_score(evaluations, list(criteria))
+
     bidder.overall_verdict = overall_verdict
     bidder.overall_reasoning = overall_reasoning
+    bidder.risk_score = risk_score
     bidder.status = "evaluated"
     session.add(bidder)
     session.commit()
-    logger.info(f"Bidder {bidder_id} evaluated → {overall_verdict}")
+    logger.info(f"Bidder {bidder_id} evaluated → {overall_verdict} (risk={risk_score})")
