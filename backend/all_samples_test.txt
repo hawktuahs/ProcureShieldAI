@@ -1,0 +1,516 @@
+
+==================== TESTING: 1258102019.pdf ====================
+Method: ocr
+Page Count: 32
+Text Length: 42404
+--------------------------------------------------
+--- PAGE 1 ---
+qa/ Year
+
+PROVISIONAL SPECIFICATION NO. IND/T'C/4587 (d)
+Supersedes Prov. Specn: IND/TC/4587{(c)
+Drawing Sheet - Four
+
+भारत सरकार
+रक्षा मंत्रालय
+गुणता आश्वासन महानिदेशालय
+
+GOVERNMENT OF INDIA
+MINISTRY OF DEFENCE
+DIRECTORATE GENERAL QUALITY ASSURANCE
+
+विशिष्टि / SPECIFICATION
+के faw/FOR
+
+कोट एक्सट्रीम कोल्ड कलाइमेट
+COAT EXTREME COLD CLIMATE
+
+डिफेन्स tent कैटलाग नंबर:
+
+DEFENCE STORES CATALOGUE NO
+
+NIV
+
+गुणता Hara नियंत्रणालय ( कपड़ा एवं वस्त्र )
+अशोक पथ, कानपुर - 208004
+
+CONTROLLER
+CONTROLLERATE OF QUALITY ASSURANCE,
+TEXTILES AND CLOTHING
+ASHOK PATH,
+
+KANPUR 208 004
+
+मई 2016
+
+yw"
+7
+
+“Me
+
+
+
+--- PAGE 2 ---
+“AMENDMENT! DATE | DETAILS OF
+
+11६६९ / ९ 8१1६ /:/६ ६. OO BUR AR ENB BNL N RN Ne BO EEE XE
+
+RECORD OF AMENDMENTS
+
+Sl. No. | । AMENDMENTS
+
+-- een +}
+
+a
+
+|
+|
+
+~ AMENDMENT ~
+| CARRIED OUT
+_ छर & DATE |
+
+
+
+--- PAGE 3 ---
+PROVISIONAL SPECIFICATION NO. IND/TC/4587 (d)
+
+INDEX
+
+| __|No ही ।
+
+_ 2. RELATED SPECIFICATION & REFERENCE _ _ 23
+3. TERMINOLOGY DEFINITIONS & SYMBOLS | 3
+a 77 ie
+| FROCESSING NUFACTURE ~~
+7 —“THIMENSIONS ETOLERANGE ३7755
+
+a0 WORKMANSHIP AND HINGE [हर
+10. | PRE-INSPECTION BY MANUFACTURER ~ | 10
+Ta QUALITY ASSURANCE —_ 190
+
+| 12. “SAMPLING PROCEDURE 10-11
+13. | CRITERIA FOR CONFORMITY - 1d
+
+| 15. | MARKING OF STORE 2
+"पद छल्छलएठ © MARIGNG i
+a | TECHNICAL LITERATURE] DOCUMENT — =
+| 21. | SUGGESTION FOR IMPROVEMENT आज या 13 |
+। 22. APPENDIX ‘A’, ‘B’, ‘C’, D’, EP, We HH | 14-20 |
+
+
+
+--- PAGE 4 ---
+PROVISIONAL SPECIFICATION NO. 1९४ | ६./ 1७0 / (a)
+
+0.0. FOREWORD
+
+| by Controller, Controllerate of
+Quality Assurance (Textiles and Clothing), Ashok Path, Kanpur on behalf
+of the Director General of Quality Assurance, Ministry of Defence, New
+Delhi.
+
+O.1 This specificauon has been prepared
+
+0.2 This specification has been revised on the basis of MGO/EM (GSé&C)
+ietter No. B/82222/2A/Coat ECC/MGO/EM (GS&C) dated 31 Aug 2015
+under cover of HQ DQA (9) letter Ne. 39 115/2/Coat ECC/DGQA/S-7
+dated 03 Sep 2015 and two prototype samples received vide OCF
+Shahjahanpur letter No. OCFS/1807/Coat ECC dated 10.10.20] 5
+
+0.3 This specification supersedes the Prov. Speen. No. IND/TC/4587
+(c) and any other important relevant information on the store.
+
+04. This specification shall be used for tender enquiry, procurement,
+manufacture and Quality Assurance of the item covered by this
+
+Specification.
+
+0.5 The Quality Assurance Authority for the store covered by this
+specification is the Controller, Controllerate of Quality Assurance (Textile
+& Clothing), DGQA Complex, Ashok Path, Kanpur-208004. Enquiries
+regarding this specification related to technical particulars shail be
+referred to the OA Authority mentioned in the tender or contract.
+
+06. Any deviation from this specification will not be resorted to without
+the explicit written sanction of the Quality Assurance Authority viz. The
+Controller, Controllerate of Quality Assurance (Textiles & Clothing),
+DGOA Complex, Ashok Path, Kanpur-208004 or his authorized
+representative.
+
+O07. This specification is
+... [snippet end] ...
+
+==================== TESTING: 298032025.pdf ====================
+Method: ocr
+Page Count: 7
+Text Length: 12871
+--------------------------------------------------
+--- PAGE 1 ---
+सेवा में,
+
+संख्या. पी-63013/218/0/2025/मोड- |/सीसुबल / /0५£ ४-५७
+
+भारत सरकार, गृह मंत्रालय
+महानिदेशालय सीमा सुरक्षा बल
+(रसद निदेशालय: आधुनिकीकरण सैल)
+(Email-comdtord@bsf. nic. in)
+(Fax: 011-24367683)
+
+ब्लाक संख्या . 10,
+
+सीजीओ काम्पलैक्स,
+लोधी रोड, नई दिल्‍ली-03
+
+दिनांक 2 अप्रैल 2025
+
+महानिदेशक:- आसाम राईफलस (through LOAR), केन्द्रीय ओद्यौगिक सुरक्षा बल,
+केन्द्रीय रिजर्व पुलिस बल, भारतीय तिब्बत बोर्डर पुलिस, सशस्त्र सीमा बल,
+राष्ट्रीय सुरक्षा गार्ड एवं पुलिस अनुसन्धान एवं विकास ब्योरो
+
+विषय:
+
+अनुमोदित गुणात्मक आवश्यकता / परीक्षण निर्देशों का प्रेषण
+
+तकनीकी विशेषज्ञों के उप समूह द्वारा किए गये पुनः सूत्रीकरण एवं महानिदेशक सीमा सुरक्षा बल
+द्वारा अनुमोदित “Shock Shield” के गुणात्मक आवश्यकता, परीक्षण निर्देशों को आपकी अग्रिम कार्यवाही हेतु
+प्रेषित किया जाता हैं।
+
+संलग्न : उपरोक्तनुसार
+
+प्रतिलिपि —
+
+1.
+
+तकनीकी निदेशक
+The Technical Director
+
+गृह मंत्रालय, नई दिल्‍ली
+
+NIC, North Block, MHA
+
+New Delhi, (द्वारा ई-मेल)
+
+(ई-मेल पत्ता : mpsugandhi@nic.in)
+SO (IT), North Block, MHA
+
+(Through E-mail)
+
+ee Mz
+BWTAe HE, leg
+(आनन्द सिंह तक्षक)
+उप महानिरीक्षक (रसद)
+
+आपसे अनुरोध है कि “Shock Shield” उपकरण के पुनः
+सूत्रीकरण किये गये गुणात्मक आवश्यकता / परीक्षण
+राष्ट्रीय सूचना-विज्ञान केन्द्र, नोर्थ ब्लाक, निर्देशों को गृह मंत्रालय की वैबसाईट MHA website
+
+Division of MHA+ - Police Modernization Division-
+
+(E-mail address: soit@nic. in)
+
+तकनीकी विंग, सीमा सुरक्षा बल
+
+Sh. Samarth Sharma,
+
+Director Nodal Officer for MHA GeM,
+3° Floor, Jeevan Bharti Building
+
+Conaught Lane, Janpath
+
+Qualitative Requirements-Qualitative Requirements of
+Machinery & Egqpt Items with Surveillance item)
+अर्न्नगत अपलोड करने का श्रम Hr |
+
+कृपया GRIN कार्यवाही करने BI AA He |
+
+RIT SIT उपकरण के गुणात्मक आवश्यकता /
+
+परीक्षण निर्देशों को सीमा सुरक्षा बल की वैबसाईट
+पर अपलोड करने का श्रम करें।
+For info with request to upload the approved
+
+Cannaught Place, New Delhi-110001
+E-mail:directorcategory]3@gem.gov.in
+
+The DIG Prov),
+
+Directorate General, CRPF,
+
+QRs & TDs of “Shock Shield” on GeM Portal.
+Copy of QRs & TDs is attached with this letter.
+
+ard सूचनार्थ आपके पत्र संख्या-1.॥1-3/2021-
+
+Block No.1, CGO Complex, Lodhi Road, में।
+
+New Delhi-03.
+फाईल |
+
+25-Prov-DA-5 दिनांक 4 मार्च 2025 के संदर्भ
+
+
+--- PAGE 2 ---
+Appendix-A
+
+#
+REVISED QUALITATIVE REQUIREMENTS/ TRIAL AR TSEY SVALITIATIVE REQUIREMENTS/ TRIAL DIRECTIVES OF SHOCK SHIELD
+SEES SARA 15 REMVIREMENTS/ TRIAL DIRECTIVES OF SHOCK SHIELD
+SENo| ___Name TBR Specifications 7२777 No| Name J QR Specifications Te tiene) ie one — _ _ Trial Directives ‘|
+i. : Nomenclature ' Shock Shield ' To be Checked by B.0.0/ Line Committee
+ः$ 2, 08४8४... «Shock Shield shall be sed by troops छक्का फाज उस Bini ET : Uses : Shock Shield shall be used by troops during their deployment in Riot or Riot like |
+. Situations. It is aNon-Lethal Equipmentto provide deterrence for self-defence
+<7) ann Se ल्‍|_औ_ _ against violent rioters/agitators. ——___| __
+3. | Colour : Should be colourless | To be checked by B.O.O/Line Committee |
+(4, | Transparency ~ Minimum 65% SSS 
+... [snippet end] ...
+
+==================== TESTING: 370052020.pdf ====================
+Method: ocr
+Page Count: 22
+Text Length: 19403
+--------------------------------------------------
+--- PAGE 1 ---
+DIPAS, ORDO
+
+Specifications of
+Improved Space Heating Device (Bukhari)
+ु For Cold Conditions
+
+No: DIPAS/Specifications/Improved SHD (Bukhari)/7/2015
+
+(Patent No: 230107)
+
+July 2015
+
+Issued by
+Defence Institute of Physiology & Allied Sciences (DIPAS)
+DRDO, Ministry of Defence,
+Timarpur, Delhi-110054
+
+RESTRICTED
+
+
+--- PAGE 2 ---
+DIPAS, DRDO
+
+Confidential Disclosure Statement Statement
+The information contained in this regulatory document entitled “Specifications of Improved Space Heating
+Device (Bukhari) for Cold Conditions” No: DIPAS/Specifications/Improved SHD (Bukhari)/7/2015
+
+developed by Biomedical Instrumentation Division of DIPAS, Delhi have been compiled from the results of
+
+extensive studies carried out by this research laboratory. री is exclusively for the internal use and for the use
+
+of Improved Space Heating Device (Bukhari) technology holders (TOT Holders) for commercial
+exploitation and information contained in this report should not be shared or reproduced in fragments or in
+
+any other form without written permission from the undersigned.
+
+a, ya
+2010२
+Director
+
+Defence Institute of Physiology & Allied Sciences,
+DRDO, Ministry of Defence,
+
+Timarpur,Lucknow Road,
+
+Dethi-110054.
+
+RESTRICTED
+
+
+--- PAGE 3 ---
+DIPAS, DRDO
+
+Specifications of .
+Improved Space Heating Device (Bukhari)
+For Cold Conditions
+
+No: DIPAS/Specifications/Improved SHD (Bukhari)/7/2015
+
+These specifications contain 22 pages. [t is property of Govt. of India and is to be retumed to the Director,
+Defence Institute of Physiology & Allied Sciences (DIPAS), DRDO, Ministry of Defence, Timarpur,
+Lucknow Road, Delhi-110054
+
+These specifications are liable to amendment at any time and therefore is applicable only to specific enquiry
+made any time. For any specific enquiry, a fresh copy of specifications is to be obtained
+
+Director, Defence Institute of Physiology & Allied Sciences (DIPAS), DRDO, Ministry of Defence,
+Timarpur, Lucknow Road, Delhi-110054 is the Authority Holding Sealed Particulars (AHSP) and is the
+competent authority to grant any concession, if any in respect of any clause contained in these specifications.
+
+This is a restricted document and therefore should not be communicated to anyone who is not authorized to
+receive it,
+
+‘The store must conform in all respects with these specifications and other particulars issued with it.
+
+Responsibility of safety: Nothing shall relieve the manufacturer of his responsibility for the safe custody of
+specifications issued to them for particular contract till the contract is completed. Manufacturer will also be
+responsible for maintenance of secrecy of the information contained in these documents.
+
+Unauthorized departure from these specifications may involve rejection of the stores which will be inspected
+during and after manufacturing and will be subject to testing for final approval of AHSP.
+
+Upon issue of amendment or introducing modifications and alteration to design, the controller will
+incorporate such ch
+... [snippet end] ...
+
+==================== TESTING: Filled_Model_Bidder_Submission_CRPF_Polymer_Based_Pistol_Tender.pdf ====================
+Method: digital
+Page Count: 11
+Text Length: 77658
+--------------------------------------------------
+--- PAGE 1 ---
+                                                                                    
+                                                                                    
+                                                                                    
+                                                    Astra Defence Systems Pvt. Ltd. | Technical Bid Pack
+              MODEL    FILLED   BIDDER   SUBMISSION      DOCUMENT                   
+                                                                                    
+                 For Tender Enquiry - Supply of Polymer Based Pistol (9mm)          
+                                                                                    
+                       Tender No.: J.II-1500/2025-26-Proc-V | Quantity: 400 Nos.    
+                                                                                    
+                         Purchaser: Directorate General, CRPF, New Delhi            
+                                                                                    
+       Particular                          Filled Details                           
+                                                                                    
+       Bidder / Firm Name                  M/s Astra Defence Systems Private Limited
+                                           Plot No. 48, Defence Industrial Park, Devanahalli, Bengaluru
+       Registered Office                                                            
+                                           Rural, Karnataka - 562110, India         
+                                           Unit-II, Plot No. 12A, KIADB Aerospace & Defence Park,
+       Factory / Manufacturing Plant                                                
+                                           Bengaluru Rural, Karnataka - 562149, India
+       Authorized Signatory                Rajiv Menon, Director - Government Business
+       Contact Details                     Phone: +91-80-4567-8900; Email: tenders@astradefence.example
+                                                                                    
+                                           29AASCA4587K1Z7 / AASCA4587K / UDYAM-KR-03-0045876 /
+       GSTIN / PAN / Udyam / CIN                                                    
+                                           U25209KA2018PTC123456                    
+       Bid Submission Type                 Two Bid System: Technical Bid + Commercial/Price Bid
+       Model Offered                       ADS-P9 Compact                           
+                                                                                    
+                                           Compliance-ready model format; factual data and attachments
+       Document Status                                                              
+                                           must be verified before submission       
+                                                                  
+... [snippet end] ...
+
+==================== TESTING: Tender notice 898092025-520.pdf ====================
+Method: ocr
+Page Count: 47
+Text Length: 102729
+--------------------------------------------------
+--- PAGE 1 ---
+Directorate General, CRPF
+(Procurement Cell of Provisioning Directorate)
+Block No.1, CGO Complex, Lodhi Road, New Delhi-1 100
+(Ministry of Home Affairs, Government of India)
+(Tele No.011-24369586 & 24360155/Fax No. 01 a @;
+(e-mail: proccell@crpf.gov.in)
+
+OPEN TENDER ENQUIRY
+
+No. U.11-1500/2025-26-Proc-V Dated, the KS September’2025
+
+To,
+
+Dear Sir,
+On behalf of the President of India, I invite you to submit online bids for Reverse
+Auction Enabled Tender for the supply of following stores:-
+
+Tender Description Qty Specification Earnest Critical Dates
+
+Enquiry of Store Moncy
+
+No Deposit (EMD)
+
+U.H-1500 | Polymer 400 | Specifications Rs. 12,00,000/- | a) LY mecting on
+
+/2025-26- | Based Pistol | No | are available at 42.../09/2025 at 1530
+
+Proc-V (9mm) Appendix-“6” | (Rupecs Twelve hrs. at conference hall
+Lakh ) only of Dte Genl, CRPF,
+
+New Delhi.
+
+EMD should be | ७) Date & time of receipt
+valid up to 225 of online tender : up to
+
+days from the 1130 hrs on
+date of opening ©5./.$\/2025
+of tender.
+
+c) Date & time of opening
+; of online tender : On or
+are required to
+
+है fier 1230 hrs
+submit “Bid / A, || 2025
+Security —
+
+Declaration”
+certificate as per
+Appendix-3 of
+
+Exempted firms
+
+the instant
+tender.
+2. If you are in a position 10 quote for supply in accordance with the requirements stated in
+
+the attached schedule to tender, all documents attached herewith should be fully filled in, signed and
+submitted through e-Procurement _ site hitps://cprocure.gov.in/eprocure/app. Attached list of
+questionnaire should also be answered and submitted through e-Procurement sitc
+https://eprocure.gov.in/eprocure/app, failing which your tender will be liable to be ignored, and will not
+be considered.
+
+3
+
+This tender has following Schedules & Appendices
+
+Page 1 of 47
+
+
+--- PAGE 2 ---
+(1) Tender Notice (NIT)
+
+(I) SCHEDULE
+
+1) Schedule-I General Terms & Conditions of the O
+1) Schedule-II
+(1) APPENDICES
+
+Appendix-1__ | Tender Acceptance Letter.
+Appendix-2 Earnest money deposit (if applicable)
+Appendix-3 i ity Declaration Certificate.
+Appendix-4 | Land Border Sharing Declaration/Model clause Certificate
+
+required as per Ministry of Finance, Deptt of Expenditure
+(Public Procurement Division) OM No. F.No.F.VII-10/2021-
+PPD(i) dated 23/02/2023
+
+Appendix-5 Self-certified “Make in India (MII) Certificate” duly
+mentioning “Percentage of local content” with “Details of
+the location (Factory / Manufacturing Plant Address) at
+which the local value addition is made” as per Ministry of
+Commerce and industry, DPIIT (Public Procurement Section)
+OM No. P-45021/2/2017-PP (BE-II) dated 16/09/2020 and
+19/07/2024.
+
+Appendix-6 Details of Manufacturer
+
+Appendix-7 QRs/Specification and Trial Directives (TDs) for Polymer
+Based Pistol (9mm)
+
+Appendix-8 Check List and Questionnaire
+Appendix-9 Details of Consignee
+Appendix-10 | Price bid in BOQ format.
+
+i Appendix-11 | Compliance Statement duly mentioned complied/not
+complied against each and every parameters of
+QRs/Specifications o
+... [snippet end] ...

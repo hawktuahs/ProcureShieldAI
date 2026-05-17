@@ -13,6 +13,13 @@ export interface Tender {
   criterion_count: number;
   bidder_count: number;
   extraction_method: string;
+  tender_type?: string | null;
+  bid_opening_date?: string | null;
+  emd_fee_amount?: string | null;
+  work_description?: string | null;
+  location?: string | null;
+  total_quantity?: string | null;
+  quantity_unit?: string | null;
 }
 
 export interface Criterion {
@@ -24,6 +31,8 @@ export interface Criterion {
   threshold_value: string | null;
   extraction_confidence: number;
   raw_source_text: string;
+  source_page: number | null;
+  source_bbox_json: string | null;
 }
 
 export interface Bidder {
@@ -41,6 +50,7 @@ export interface Bidder {
   criteria_fail?: number;
   criteria_review?: number;
   match_score?: number | null;
+  risk_score?: number | null;
 }
 
 export interface Evaluation {
@@ -74,6 +84,7 @@ export interface CompareData {
     bidder_name: string;
     overall_verdict: string | null;
     status: string;
+    risk_score?: number | null;
     criteria: Record<number, {
       verdict: string | null;
       human_verdict: string | null;
@@ -124,6 +135,28 @@ export const getCompareData = (tenderId: number) =>
 export const getReportUrl = (tenderId: number) =>
   `${BASE}/api/tenders/${tenderId}/report`;
 
+export const getTenderFileUrl = (tenderId: number) =>
+  `${BASE}/api/tenders/${tenderId}/file`;
+
+export const getBidderFileUrl = (tenderId: number, bidderId: number) =>
+  `${BASE}/api/tenders/${tenderId}/bidders/${bidderId}/file`;
+
+export interface AuditEvent {
+  id: number;
+  event_type: string;
+  actor: string;
+  actor_type: string;
+  payload: any;
+  timestamp: string;
+  hash: string;
+}
+
+export const getAuditTrail = (tenderId: number) =>
+  api.get<AuditEvent[]>(`/api/tenders/${tenderId}/audit`);
+
+export const verifyAuditTrail = (tenderId: number) =>
+  api.get<{ valid: boolean; event_count: number; first_hash: string | null; last_hash: string | null; broken_at: number | null }>(`/api/tenders/${tenderId}/audit/verify`);
+
 // Analysis types
 export interface TenderOverview {
   work_description?: string | null;
@@ -135,6 +168,8 @@ export interface TenderOverview {
   published_date?: string | null;
   bid_opening_date?: string | null;
   last_activity_date?: string | null;
+  total_quantity?: string | null;
+  quantity_unit?: string | null;
   tender_fee_amount?: string | null;
   tender_fee_exemption_allowed?: string | null;
   emd_fee_amount?: string | null;
@@ -152,6 +187,7 @@ export interface ItemEntry {
   specifications_ref: string | null;
   specifications?: string[];
   source_text: string;
+  source_page?: number | null;
 }
 
 export interface AnalysisDocument {
@@ -164,6 +200,7 @@ export interface AnalysisDocument {
   details?: string | null;
   format_notes?: string | null;
   source_text: string;
+  source_page?: number | null;
 }
 
 export interface ScopeItem {
@@ -171,6 +208,7 @@ export interface ScopeItem {
   summary: string;
   citations: string[];
   source_text: string;
+  source_page?: number | null;
 }
 
 export interface EligibilityItem {
@@ -180,6 +218,7 @@ export interface EligibilityItem {
   is_mandatory: boolean;
   threshold_value?: string | null;
   source_text: string;
+  source_page?: number | null;
 }
 
 export interface ContactItem {
@@ -191,6 +230,7 @@ export interface ContactItem {
   email?: string | null;
   citations: string[];
   source_text: string;
+  source_page?: number | null;
 }
 
 export interface TenderAnalysisData {
@@ -213,6 +253,34 @@ export const reanalyzeTender = (tenderId: number) =>
 
 export const askTender = (tenderId: number, question: string) =>
   api.post<{ question: string; answer: string }>(`/api/tenders/${tenderId}/ask`, { question });
+
+// Source provenance
+export interface SourceProofResult {
+  page: number;
+  bbox: { x0: number; y0: number; x1: number; y1: number } | null;
+  confidence: number;
+  found: boolean;
+  image_url: string;
+  page_count: number;
+}
+
+export const getPageImageUrl = (
+  tenderId: number,
+  page: number,
+  bbox?: { x0: number; y0: number; x1: number; y1: number } | null
+): string => {
+  let url = `${BASE}/api/tenders/${tenderId}/page/${page}/image`;
+  if (bbox) {
+    url += `?highlight_x0=${bbox.x0}&highlight_y0=${bbox.y0}&highlight_x1=${bbox.x1}&highlight_y1=${bbox.y1}`;
+  }
+  return url;
+};
+
+export const getSourceProof = (tenderId: number, sourceText: string, pageHint?: number | null) =>
+  api.post<SourceProofResult>(`/api/tenders/${tenderId}/source-proof`, {
+    source_text: sourceText,
+    page_hint: pageHint ?? null,
+  });
 
 
 export const checkHealth = () => api.get<{

@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
+import SidebarNav from "@/components/SidebarNav";
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: "ProcureShield AI — AI-Powered Procurement Evaluation",
@@ -8,24 +13,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-slate-50">
-        <header className="bg-[#1e3a5f] text-white shadow-lg">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">ProcureShield AI</h1>
-              <p className="text-blue-300 text-xs mt-0.5">AI-Powered Procurement Evaluation System</p>
-            </div>
-            <div className="text-xs text-blue-200 text-right">
-              <div>CRPF / AI for Bharat</div>
-              <div className="text-blue-400">Government Procurement Platform</div>
-            </div>
-          </div>
-        </header>
-        <main className="max-w-7xl mx-auto px-6 py-6">{children}</main>
-        <footer className="border-t border-slate-200 mt-12 py-4 text-center text-xs text-slate-400">
-          ProcureShield AI — For official use only. All decisions subject to human review and approval.
-        </footer>
+    <html lang="en" className={cn("font-sans", inter.variable)}>
+      <body className="min-h-screen bg-[#f8fafc] flex">
+        <SidebarNav />
+        {/* Main area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <main className="flex-1 px-6 py-6 overflow-auto">
+            {children}
+          </main>
+          <footer className="border-t border-slate-200 py-3 px-6 text-xs text-slate-400 bg-white shrink-0">
+            ProcureShield AI — For official use only. All decisions subject to human review and approval.
+          </footer>
+        </div>
       </body>
     </html>
   );

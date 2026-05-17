@@ -1,0 +1,392 @@
+Method: ocr
+Page Count: 7
+Text Length: 12871
+--------------------------------------------------
+--- PAGE 1 ---
+सेवा में,
+
+संख्या. पी-63013/218/0/2025/मोड- |/सीसुबल / /0५£ ४-५७
+
+भारत सरकार, गृह मंत्रालय
+महानिदेशालय सीमा सुरक्षा बल
+(रसद निदेशालय: आधुनिकीकरण सैल)
+(Email-comdtord@bsf. nic. in)
+(Fax: 011-24367683)
+
+ब्लाक संख्या . 10,
+
+सीजीओ काम्पलैक्स,
+लोधी रोड, नई दिल्‍ली-03
+
+दिनांक 2 अप्रैल 2025
+
+महानिदेशक:- आसाम राईफलस (through LOAR), केन्द्रीय ओद्यौगिक सुरक्षा बल,
+केन्द्रीय रिजर्व पुलिस बल, भारतीय तिब्बत बोर्डर पुलिस, सशस्त्र सीमा बल,
+राष्ट्रीय सुरक्षा गार्ड एवं पुलिस अनुसन्धान एवं विकास ब्योरो
+
+विषय:
+
+अनुमोदित गुणात्मक आवश्यकता / परीक्षण निर्देशों का प्रेषण
+
+तकनीकी विशेषज्ञों के उप समूह द्वारा किए गये पुनः सूत्रीकरण एवं महानिदेशक सीमा सुरक्षा बल
+द्वारा अनुमोदित “Shock Shield” के गुणात्मक आवश्यकता, परीक्षण निर्देशों को आपकी अग्रिम कार्यवाही हेतु
+प्रेषित किया जाता हैं।
+
+संलग्न : उपरोक्तनुसार
+
+प्रतिलिपि —
+
+1.
+
+तकनीकी निदेशक
+The Technical Director
+
+गृह मंत्रालय, नई दिल्‍ली
+
+NIC, North Block, MHA
+
+New Delhi, (द्वारा ई-मेल)
+
+(ई-मेल पत्ता : mpsugandhi@nic.in)
+SO (IT), North Block, MHA
+
+(Through E-mail)
+
+ee Mz
+BWTAe HE, leg
+(आनन्द सिंह तक्षक)
+उप महानिरीक्षक (रसद)
+
+आपसे अनुरोध है कि “Shock Shield” उपकरण के पुनः
+सूत्रीकरण किये गये गुणात्मक आवश्यकता / परीक्षण
+राष्ट्रीय सूचना-विज्ञान केन्द्र, नोर्थ ब्लाक, निर्देशों को गृह मंत्रालय की वैबसाईट MHA website
+
+Division of MHA+ - Police Modernization Division-
+
+(E-mail address: soit@nic. in)
+
+तकनीकी विंग, सीमा सुरक्षा बल
+
+Sh. Samarth Sharma,
+
+Director Nodal Officer for MHA GeM,
+3° Floor, Jeevan Bharti Building
+
+Conaught Lane, Janpath
+
+Qualitative Requirements-Qualitative Requirements of
+Machinery & Egqpt Items with Surveillance item)
+अर्न्नगत अपलोड करने का श्रम Hr |
+
+कृपया GRIN कार्यवाही करने BI AA He |
+
+RIT SIT उपकरण के गुणात्मक आवश्यकता /
+
+परीक्षण निर्देशों को सीमा सुरक्षा बल की वैबसाईट
+पर अपलोड करने का श्रम करें।
+For info with request to upload the approved
+
+Cannaught Place, New Delhi-110001
+E-mail:directorcategory]3@gem.gov.in
+
+The DIG Prov),
+
+Directorate General, CRPF,
+
+QRs & TDs of “Shock Shield” on GeM Portal.
+Copy of QRs & TDs is attached with this letter.
+
+ard सूचनार्थ आपके पत्र संख्या-1.॥1-3/2021-
+
+Block No.1, CGO Complex, Lodhi Road, में।
+
+New Delhi-03.
+फाईल |
+
+25-Prov-DA-5 दिनांक 4 मार्च 2025 के संदर्भ
+
+
+--- PAGE 2 ---
+Appendix-A
+
+#
+REVISED QUALITATIVE REQUIREMENTS/ TRIAL AR TSEY SVALITIATIVE REQUIREMENTS/ TRIAL DIRECTIVES OF SHOCK SHIELD
+SEES SARA 15 REMVIREMENTS/ TRIAL DIRECTIVES OF SHOCK SHIELD
+SENo| ___Name TBR Specifications 7२777 No| Name J QR Specifications Te tiene) ie one — _ _ Trial Directives ‘|
+i. : Nomenclature ' Shock Shield ' To be Checked by B.0.0/ Line Committee
+ः$ 2, 08४8४... «Shock Shield shall be sed by troops छक्का फाज उस Bini ET : Uses : Shock Shield shall be used by troops during their deployment in Riot or Riot like |
+. Situations. It is aNon-Lethal Equipmentto provide deterrence for self-defence
+<7) ann Se ल्‍|_औ_ _ against violent rioters/agitators. ——___| __
+3. | Colour : Should be colourless | To be checked by B.O.O/Line Committee |
+(4, | Transparency ~ Minimum 65% SSS i Certification from a Valid NABL accredited |
+i Lab '
+। | e Duly certified in user manual/literature
+5) Operating ae pt tovided bye .____ ो/ढ&छ
+'§. + Operating& -- 20°C to + 50°C i Certification from a Valid NABL accredited,
+:_ Storage Temperature a है ट1ई ०01... / ् [11 |
+6, : Water resistance for Electric : iPX4 or above i
+_ parts | |
+7. | Weight _ i 4,500 gms (Maximum) OS
+‘8. : Shape ————__, Reclengular or any other shape providing maximum protection tothe user __ Rectangular or any other shape providing maximum protection lo the user or any other shape providing maximum protection fo the user
+| [शाह 1 920 + 20mm | |
+9. _: Dimensions i Breadth (Fiat) : 560 mm to 600 mm ह | To be check by BOO/ Line |
+_ Bread (Concave) धन का 1 छा  99//1॒ | 600 mm lo 92 mm  commitiee - !
+| i Thickness i. शत | 03 mm (Minimum) 03 mm (Minimum) asd eaea au) oe |
+| Polycarbonate i (i) The polycarbonate sheet shall be made of high impact resistant/ natural | e Certification from any Valid NABL |
+: 10. | Material requirements ' polycarbonate material. It may contain additives, processing aids and stabilizers ; accredited Lab for the test conducted asi
+| "(for example UV absorbers). a [ 78 IS 1443424998. |
+
+hy Se ww $- » 22
+
+1
+
+
+--- PAGE 3 ---
+ne Specifications
+The PC Sheet material shall comply with the requirements as 0
+Characteristics | Requirement “Method of test, Ref
+| Melt Flow Index, gram/10 min. (at |i) 1.5t08 Is 43360
+| आय Ee under 1.2 Kg load when | (for extrusion \(Part 4 / Sec 1/ Sub-sec 2)
+| measured after pre- drying of the | Thermoforming) |
+
+| material at 120+ 5°C ७४०4 hrs.) | ii) 8 to 15 |
+! | (for injection mouldin
+
+Ty See pate) या to 1.22
+
+elow!-
+
+to IS/Annx
+
+‘AS 13360
+
+Specific Gravity
+
+बल. 1000० we load at 1.82 MPa, Min,°C
+
+ee ES नशा gg  उाछछ क | |
+
+Certification from any Valid |
+
+(Past 3 Section 11 ;
+: ' _ NABL accredit 0 for the |
+ey Flexural Modulus, “Win, MP2 | 15 13360 accredited Lab for Me
+| ! (With crosshead speed of 1.2 ; \(Part-5 Section-7) fest conducted as per |S:
+; mm/min and a span to depth ratio ; 2200 | i specified at column-4 wi
+|| | of 16 to 1 (test specimen size, 04 | te specified at column-4 wih
+| Lmmx 10mm) _  ७वऊत्लण | mm x10. mm | results as per values shown in |
+' (d) “201 Impact Strength, notched, ; | 19 13360 column-3 (a), (9 0) & (e) |
+| : “Min, kJ/m? हर specimen | (Part-5 Section-4) | (2), (0, (के, (@) & (9) |
+‘thickness of 03 mm and notch | | of the table at 91 No 19 . |
+[1 ‘ radius of 0.25 mm 60 | \ |
+i “Deflection Temperature under | : 15 13360
+| !
+
+
+--- PAGE 4 ---
+न री 11 sheet sha compiy wit कर es requemenis as perlable balw= 1 Gerson कक का झा Polycarbo  - (i) PC sheet shall comply with the test requirements as per table below:- Certification from any Valid
+
+177. natesheet | NABL accredited Lab for the i
+: Characteris _SINo. | Characteristics’ Requirement 1 Method of lest Ref o [SiAmnex 1 No | Characteristics कम मल काना al eile Requirement _| Method of testRef fo 15/0000५__] test conducted as per IS
+; tics (a) Dart drop impact Minimum J (at ‘ 150 Annex B of IS 14443 specified at column-4 with
+
+27°C)
+Light Transmission, percent
+Ranney Ta a es ज्राछकक See जक्त-
+
+Flammability Test (test specimen
+—__Llhickness 3.18mms0.13mm) | Specification, Annex'C) 3.18mm+0.13mm
+
+results as per values shown in |
+column-3(a), (0) & (c ) of the
+table at SINo.11 & to be
+checked by BoO for column-
+
+30)
+
+"35 [1S 13360 (Part9 Section-5)
+
+| 94 HB class
+
+IS 16864, protective Shield
+| Specification, Annex'C’
+
+| : ' (ii) The polycarbonate body of the Shock Shield shall have abrasion resistance surface coating on both
+. ‘ Surfaces.
+
+OSE cere aN ES aT Handle/Ar
+
+: (i) Handle with Grip, Arm Support shall be provided for comfortable use of teh equipment for long durations. To be check by BoO /Line |
+’m rest Committee. :
+, Characteri | (ii) General requirement of Handle:-
+
+' tics
+: (a) Material for handle should be polymeric, preferably polycarbonate (Sling attachment)
+
+! (0) Classic bolts(MS) if used, shall be SS 304 hex-headed. Dome Nut and bolts system should
+preferably be self-locking
+
++ eee Dove ws # ६ 0.1
+
+
+
+--- PAGE 5 ---
+aS ee eee EE Specifications
+
+Trial Directives
+
+' SL.No Name | | ina
+
+|! 2 5 दर ; - 1 ह _—— : - :
+
+(a) Resistance to vandalism :- The Polycarbonate body of the shield Shallhave _, Certification from any Valid NABL accredited
+| dene Se yo RI ART Ce ORO SETS impact resistance of level ‘A3’ when tested for vandal resistance as per the method LAB for the test prescribed in Annex C of IS ;
+| rescribed in Annex 0 of IS 14443. 14443
+| (b) Resistance to surface penetration: “The Polycarbonate body of Shock shield | Certification from any Valid NABL accredited -
+: shall have resistance of level ‘B3” against penetration when tested for resistance [0 | LAB for the test prescribed in Annex Dof |S!
+Field Performance forced entry as pet the test method 9९90 ० ee ock shield छ surface forced entry as per the test method prescribed in Annex 0015 14443. _1 14443. Field Trial on NCNG सा 44443, Field Trial on NCNC basis. ह
+13. | requirements : (c)Resistance to Surface Abrasion:-The resistance of Shock shield fo surface | Certification from any Valid NABL accredited '
+
+of
+Shock Shield
+
+ee ला शा Resistance (
+
+Ve a ३३३३-३9». Life
+
+“{
+
+| Miscellaneous,
+. {il) The desig
+nl
+
+with Protective coatin
+06 Years (
+For batter
+i) The Word
+| ' fluorescent paper $
+| specified by user)
+the shield should be such that during han
+ot fall on the resting surface
+
+oo [iy Elastomene Se > (ii Elastomeric bushes
+
+ome pee nay a shall be tested in accordance with ASTM D 1044 for 100 cycles under 500 g
+: load. Haze of test specimen s
+| (d)Resistance to Environmenta
+
+hall not be m
+| Stress
+ESCR) test shall be
+) by constant strain
+
+RAF/ POLICE in 100 mm
+
+on
+nof
+
+performed on polycarbona
+
+minimum) except battery,
+04
+
+widin and 400 mm length May be written of
+ize(100mm width and 400mm length +10mm) (colour to be |
+front side or as required by user depart |
+
+& washers should be used fornut and bottsystem, | F be used for nut and bolt system.
+
+LAB for the test in accordance with ASTM D
+1044.
+Cerlificate from any Valid NABL accredited
+lab for the test conducted as per 15 13360
+
+i (Part8/Sec 9).
+1 Recommended
+
+ore than 20 percent.
+Cracking:- Enviro
+
+ment Stress Cracking
+te body of the shield (
+(Part 8/ Sec 9).
+
+method as per 1S 13360:
+
+ment.
+
+ing the vision area should
+
+01 To be check by BOO! Line committee
+
+rae
+
+vy Sausey: /८८४० ys हु
+
+
+--- PAGE 6 ---
+Y
+
+151. No. | Name QR Specifications Trial Directives
+Capacity As Required | |
+(0) | Type Rechargeable Batteries complying to:- |
+1. 1S 16046 (Part) for Nickel based batteries. |
+Battery Specifications or
+for Shock Shield 2. |S 16046 (Part Il} for Lithium based batteries.
+16. । Charging cycles 1000 (minimum) 1 Certificate from any Valid NABL 1
+] Charging time Maximum 04 hours from tow to full charge. accredited lab
+| (e) | Number of shocks _| Minimum 7000 qtr second burst when fully charged |
+| (f} | Indicators Full, Low & Charging Battery {on equipment or on | To be Checked by B.O.O/Line Committee
+Charging Adapter)
+| (a) । Input Voltage 220 V, 50 Hz (+10 %
+' 17. | Voltage&Current 1 (b} | Output Voltage 80 KV (minimum) | Certificate from any Valid NABL
+(c) | Max Duration of 1 ms/ 1mA accredited lab
+Impulse/ Current
+18. : Electrical Safety Compliance to Clause 13 (Leakage Current and Electrical Strength at Operating | Certification from any Valid NABL |
+J; Temperature) & Clause 15 (Moisture Resistance) of IS 302-1 = accreciteg EAB | Temperature) & Clause 15 (Moisture Resistance) of IS 302-1 | accredited LAB
+
+दा er (i) Aluminium Electrodes should be uniformly distributed coveringat least 20% area of
+| (b) | Placement of Electrodes front surface of the shield. |. |"
+| their Shape/ Design (i) Thickness of Electrodes-Min 1.5mm(+0.5mm). | To be Checked by 8.0.0॥॥8 Committee |
+| eth (1) Width of Elecirodes- Min 20 mm( 03mm)
+(iv) Electrodes shape/ Design must be so that the vision area of the shield doesn't
+get affected
+
+(v) Electric sparks will be visible from electrodes for deterrence
+
+क्‍ 64५८ Pate» 0४४३८
+
+
+
+--- PAGE 7 ---
+20. { Miscellaneous | os
+(a) | The Manufacture/ supplier will provide complete test reports for confirmation of compliance from yo
+any NABL/Govt. accredited Lab To be Checked by B.0.O/Line Committee
+01 year warranty for battery& electrical circuits/fittings and 03 years warranty for whole equipment.
+OEM/ Traders should be able to provide at least 03 years AMC on completion of warranty.
+21, | Field testing/ observations by BOO
+
+(a) | Drop Test To confirm the physical ruggedness of equipment, The equipment should be | To be Checked by B.O.O and their views will be :
+thrown five times from 02 meter height on a concrete surface. No physical | considered final and binding against the Lab Test '
+damage to the equipment should be reported Reports |
+
+(b) | Impact Test The shield will be hit five times on the front surface/edgeusing 01 meter long& | To be Checked by B.O.O and their views will be |
+
+blunt SS/lron rod (with circular cross section) of 10mm-25mm Dia& 1kg-1.5kg | considered final and binding against the Lab Test |
+Weight. Different points of impact may be chosen for every strike. No | Reports.
+damage/ cracks should be reported.
+
+(0) | Current Detection Board will check the presence of electrical charge/energy on various portions | To be Checked by B.O.O and their views will be |
+of electrodeswith the help of common electric tester (Screw Driver type). considered final and binding against the Lab Test
+| Reports. |
+Haw/iGD Wve Kumar, AR Insp. Abhinav Kumar Pandey, SSB Vikrant Vedwan, AC (Tech Officer) RAF Pankaj Dagar , ¥\ SG
+2"y = ee cua a
+ह 4७७० अथ, CISF Vijay Singh,DC B Sandeep a Sc’D' BIS r.C-Robert Varte, Sc’E’ DRDO
+Me ५७ poe a
+——
+
+Anil Kumar, 2-i/C 103 RAF Shahnawaz Khan, DIG(Prov) Sonal V.Misra, IPS, IG (Prov) andeep Khirwar, iPS, ADG HQr
+
+2«-&209
+
+5
